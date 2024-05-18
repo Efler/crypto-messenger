@@ -11,13 +11,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.System.arraycopy;
 import static org.eflerrr.utils.Utils.xorBits;
 
 @SuppressWarnings("Duplicates")
 public class RandomDeltaEncryptMode extends AEncryptMode {
 
-    public RandomDeltaEncryptMode(IEncryptor encryptor, int lengthBlock, byte[] IV) {
-        super(encryptor, lengthBlock, IV);
+    private byte[] ensureLength(byte[] original, int length) {
+        if (original.length >= length) {
+            return original;
+        } else {
+            byte[] result = new byte[length];
+            int offset = length - original.length;
+            arraycopy(original, 0, result, offset, original.length);
+            return result;
+        }
     }
 
     private void processEncrypt(byte[] input, byte[] output, BigInteger delta, int i) {
@@ -25,9 +33,10 @@ public class RandomDeltaEncryptMode extends AEncryptMode {
         var initCurr = init.add(delta.multiply(BigInteger.valueOf(i)));
         int offset = i * lengthBlock;
         byte[] block = new byte[lengthBlock];
-        System.arraycopy(input, offset, block, 0, lengthBlock);
-        byte[] encryptedBlock = encryptor.encrypt(xorBits(initCurr.toByteArray(), block));
-        System.arraycopy(encryptedBlock, 0, output, offset, encryptedBlock.length);
+        arraycopy(input, offset, block, 0, lengthBlock);
+        var ensuredIV = ensureLength(initCurr.toByteArray(), lengthBlock);
+        byte[] encryptedBlock = encryptor.encrypt(xorBits(ensuredIV, block));
+        arraycopy(encryptedBlock, 0, output, offset, encryptedBlock.length);
     }
 
     private void processDecrypt(byte[] input, byte[] output, BigInteger delta, int i) {
@@ -35,9 +44,15 @@ public class RandomDeltaEncryptMode extends AEncryptMode {
         var initCurr = init.add(delta.multiply(BigInteger.valueOf(i)));
         int offset = i * lengthBlock;
         byte[] block = new byte[lengthBlock];
-        System.arraycopy(input, offset, block, 0, lengthBlock);
-        byte[] decryptedBlock = xorBits(encryptor.decrypt(block), initCurr.toByteArray());
-        System.arraycopy(decryptedBlock, 0, output, offset, decryptedBlock.length);
+        arraycopy(input, offset, block, 0, lengthBlock);
+        var ensuredIV = ensureLength(initCurr.toByteArray(), lengthBlock);
+        byte[] decryptedBlock = xorBits(encryptor.decrypt(block), ensuredIV);
+        arraycopy(decryptedBlock, 0, output, offset, decryptedBlock.length);
+    }
+
+
+    public RandomDeltaEncryptMode(IEncryptor encryptor, int lengthBlock, byte[] IV) {
+        super(encryptor, lengthBlock, IV);
     }
 
     @Override
@@ -51,7 +66,7 @@ public class RandomDeltaEncryptMode extends AEncryptMode {
                 futures.add(
                         CompletableFuture.runAsync(() -> processEncrypt(
                                 data, result,
-                                new BigInteger(Arrays.copyOf(IV, lengthBlock / 2)),
+                                new BigInteger(Arrays.copyOfRange(IV, lengthBlock / 2, IV.length)),
                                 finalI), executor));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -81,7 +96,7 @@ public class RandomDeltaEncryptMode extends AEncryptMode {
                 futures.add(
                         CompletableFuture.runAsync(() -> processDecrypt(
                                 data, result,
-                                new BigInteger(Arrays.copyOf(IV, lengthBlock / 2)),
+                                new BigInteger(Arrays.copyOfRange(IV, lengthBlock / 2, IV.length)),
                                 finalI), executor));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
