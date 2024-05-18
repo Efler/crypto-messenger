@@ -1,13 +1,16 @@
 package org.eflerrr;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eflerrr.encrypt.encryptor.impl.RC5Encryptor;
 import org.eflerrr.encrypt.manager.EncryptorManager;
 import org.eflerrr.encrypt.mode.EncryptModes;
 import org.eflerrr.padding.Paddings;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+
+import static org.eflerrr.encrypt.manager.EncryptorManager.EncryptionAlgorithm.RC6_32_20_32;
+import static org.eflerrr.encrypt.manager.EncryptorManager.EncryptionAlgorithm.RC6_DEFAULT;
+import static org.eflerrr.utils.Utils.generateIV;
 
 @Slf4j
 @SuppressWarnings("all")
@@ -27,17 +30,12 @@ public class Main {
                         (byte) 0x04, (byte) 0x01, (byte) 0x02, (byte) 0x1C,
                         (byte) 0xF4, (byte) 0x65, (byte) 0x83, (byte) 0x07,
                         (byte) 0xAA, (byte) 0x09, (byte) 0x1A, (byte) 0x0B,
-                        (byte) 0x00, (byte) 0xDD, (byte) 0x8E, (byte) 0x0F,
+                        (byte) 0x00, (byte) 0xDD, (byte) 0x8E, (byte) 0x0F
                 },
-                new RC5Encryptor(64, 10, 50),
+                RC6_DEFAULT,
                 EncryptModes.Mode.RandomDelta,
-                Paddings.PaddingType.ZEROZ,
-                new byte[]{
-                        (byte) 0xA1, (byte) 0x52, (byte) 0x03, (byte) 0x04,
-                        (byte) 0x05, (byte) 0x06, (byte) 0x09, (byte) 0xDC,
-                        (byte) 0x09, (byte) 0x6A, (byte) 0x0B, (byte) 0x0C,
-                        (byte) 0x0D, (byte) 0x0E, (byte) 0xFF, (byte) 0x10,
-                }
+                Paddings.PaddingType.ISO10126,
+                generateIV(32)
         );
 
         try {
@@ -66,7 +64,6 @@ public class Main {
         } catch (IOException e) {
             log.error("DecryptFileAsync Error! Message : {}", e.getMessage());
         }
-
     }
 
 }

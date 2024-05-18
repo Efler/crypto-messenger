@@ -1,6 +1,8 @@
 package org.eflerrr.encrypt.manager;
 
 import org.eflerrr.encrypt.encryptor.IEncryptor;
+import org.eflerrr.encrypt.encryptor.impl.RC5Encryptor;
+import org.eflerrr.encrypt.encryptor.impl.RC6Encryptor;
 import org.eflerrr.encrypt.mode.AEncryptMode;
 import org.eflerrr.encrypt.mode.EncryptModes;
 import org.eflerrr.padding.IPadding;
@@ -22,6 +24,42 @@ import static org.eflerrr.padding.Paddings.getPadding;
 
 public class EncryptorManager {
 
+    public enum EncryptionAlgorithm {
+        RC5_16_12_16, RC5_16_12_24, RC5_16_12_32,
+        RC5_32_12_16, RC5_32_12_24, RC5_32_12_32,
+        RC5_64_12_16, RC5_64_12_24, RC5_64_12_32,
+        RC5_DEFAULT,
+        RC6_16_20_16, RC6_16_20_24, RC6_16_20_32,
+        RC6_32_20_16, RC6_32_20_24, RC6_32_20_32,
+        RC6_64_20_16, RC6_64_20_24, RC6_64_20_32,
+        RC6_DEFAULT
+    }
+
+    protected static IEncryptor getEncryptor(EncryptionAlgorithm algorithm) {
+        return switch (algorithm) {
+            case RC5_16_12_16 -> new RC5Encryptor(32, 16, 12);
+            case RC5_16_12_24 -> new RC5Encryptor(32, 24, 12);
+            case RC5_16_12_32 -> new RC5Encryptor(32, 32, 12);
+            case RC5_32_12_16 -> new RC5Encryptor(64, 16, 12);
+            case RC5_32_12_24 -> new RC5Encryptor(64, 24, 12);
+            case RC5_32_12_32 -> new RC5Encryptor(64, 32, 12);
+            case RC5_64_12_16 -> new RC5Encryptor(128, 16, 12);
+            case RC5_64_12_24 -> new RC5Encryptor(128, 24, 12);
+            case RC5_64_12_32 -> new RC5Encryptor(128, 32, 12);
+            case RC5_DEFAULT -> new RC5Encryptor();
+            case RC6_16_20_16 -> new RC6Encryptor(64, 16, 20);
+            case RC6_16_20_24 -> new RC6Encryptor(64, 24, 20);
+            case RC6_16_20_32 -> new RC6Encryptor(64, 32, 20);
+            case RC6_32_20_16 -> new RC6Encryptor(128, 16, 20);
+            case RC6_32_20_24 -> new RC6Encryptor(128, 24, 20);
+            case RC6_32_20_32 -> new RC6Encryptor(128, 32, 20);
+            case RC6_64_20_16 -> new RC6Encryptor(256, 16, 20);
+            case RC6_64_20_24 -> new RC6Encryptor(256, 24, 20);
+            case RC6_64_20_32 -> new RC6Encryptor(256, 32, 20);
+            case RC6_DEFAULT -> new RC6Encryptor();
+        };
+    }
+
     protected final AEncryptMode kernelMode;
     protected final IPadding padding;
     protected final int blockLength;
@@ -35,6 +73,15 @@ public class EncryptorManager {
         kernelMode = getMode(mode, encryptor.setKey(key), initializationVector);
         padding = getPadding(type);
         blockLength = encryptor.getBlockLength() / Byte.SIZE;
+    }
+
+    public EncryptorManager(
+            byte[] key,
+            EncryptionAlgorithm algorithm,
+            EncryptModes.Mode mode,
+            Paddings.PaddingType type,
+            byte[] initializationVector) {
+        this(key, getEncryptor(algorithm), mode, type, initializationVector);
     }
 
     public byte[] encryptSync(byte[] plain) {
