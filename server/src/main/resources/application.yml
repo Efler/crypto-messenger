@@ -1,10 +1,22 @@
-server:
-  port: 8080
+app-configs:
+  kafka:
+    bootstrap-servers: localhost:9093
+    topics-replication-factor: 2
+    topics-postfix: -room
+  diffie-hellman:
+    bit-length: 100
 
 spring:
   application:
     name: server
+  kafka:
+    bootstrap-servers: ${app-configs.kafka.bootstrap-servers}
+    admin:
+      client-id: server-admin
 
 springdoc:
   swagger-ui:
     path: /endpoints
+
+server:
+  port: 8080
