@@ -1,5 +1,9 @@
 todo.txt
 
+server/gradle/
+server/.gradle/
+server/build/
+
 cipher/gradle/
 cipher/.gradle/
 cipher/build/
