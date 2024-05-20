@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigInteger;
+
 @Data
 @Builder
 public class ClientInfo {
@@ -17,5 +19,6 @@ public class ClientInfo {
     private String host;
     @Min(1)
     private int port;
+    private BigInteger publicKey;
 
 }
