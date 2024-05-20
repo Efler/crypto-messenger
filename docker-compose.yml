@@ -7,8 +7,8 @@ services:
     image: bitnami/zookeeper:latest
     ports:
       - "2181:2181"
-    volumes:
-      - "zookeeper-data:/bitnami"
+#    volumes:
+#      - "zookeeper-data:/bitnami"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     networks:
@@ -19,8 +19,8 @@ services:
     ports:
       - "9092:9092"
       - "9093:9093"
-    volumes:
-      - "broker-1-data:/bitnami"
+#    volumes:
+#      - "broker-1-data:/bitnami"
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
@@ -38,8 +38,8 @@ services:
     ports:
       - "9094:9094"
       - "9095:9095"
-    volumes:
-      - "broker-2-data:/bitnami"
+#    volumes:
+#      - "broker-2-data:/bitnami"
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
@@ -53,25 +53,25 @@ services:
       - backend
 
 
-volumes:
-  zookeeper-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./docker-volumes/zookeeper-data
-  broker-1-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./docker-volumes/broker-1-data
-  broker-2-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./docker-volumes/broker-2-data
+#volumes:
+#  zookeeper-data:
+#    driver: local
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ./docker-volumes/zookeeper-data
+#  broker-1-data:
+#    driver: local
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ./docker-volumes/broker-1-data
+#  broker-2-data:
+#    driver: local
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ./docker-volumes/broker-2-data
 
 
 networks:
