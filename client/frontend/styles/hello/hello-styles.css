@@ -25,6 +25,12 @@
     background-color: var(--primary-color);
     font-family: var(--app-font), cursive;
 }
+.hello-view .submit-button:hover {
+    background-color: var(--hover-color);
+}
+.hello-view .submit-button:active {
+    background-color: var(--active-color);
+}
 
 vaadin-notification-card::part(overlay) {
     background-color: var(--primary-color);
