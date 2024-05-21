@@ -22,13 +22,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ChatService {
 
-    private final Map<String, Chat> chats = new HashMap<>();
+    private final Map<String, Chat> chats = new ConcurrentHashMap<>();
     private final DiffieHellman diffieHellman;
     private final HttpClient httpClient;
     private final KafkaAdmin kafkaAdmin;
