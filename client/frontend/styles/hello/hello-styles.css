@@ -1,0 +1,35 @@
+@import "frontend/styles/root-styles.css";
+
+.hello-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--secondary-color);
+}
+
+.hello-view .header {
+    color: var(--primary-color);
+    margin-bottom: 30px;
+}
+
+.hello-view .name-field {
+    width: 300px;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.hello-view .submit-button {
+    width: 300px;
+    color: var(--secondary-color);
+    background-color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+}
+
+vaadin-notification-card::part(overlay) {
+    background-color: var(--primary-color);
+}
+
+vaadin-notification-card::part(content) {
+    font-family: var(--app-font), cursive;
+}

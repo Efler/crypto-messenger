@@ -1,0 +1,9 @@
+:root {
+    --primary-color: #d2d2d2;
+    --secondary-color: #272727;
+    --app-font: "Comic Sans MS";
+}
+
+body, input {
+    font-family: var(--app-font), cursive;
+}
