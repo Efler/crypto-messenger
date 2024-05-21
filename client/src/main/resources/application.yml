@@ -1,5 +1,8 @@
 app-configs:
-  server-url: localhost:8080
+  server-url: http://localhost:8080
+  chat-list:
+    update-interval: 3000ms
+    endpoint: /chat/list
 
 spring:
   application:

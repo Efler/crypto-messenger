@@ -3,6 +3,7 @@ package org.eflerrr.server.service;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.eflerrr.server.client.HttpClient;
@@ -18,10 +19,7 @@ import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -41,7 +39,7 @@ public class ChatService {
     public enum CipherAlgorithm {
         RC5,
         RC6
-    }
+    } // TODO! More algorithms!
 
 
     public CreateChatResponse createChat(
@@ -172,8 +170,15 @@ public class ChatService {
         }
     }
 
-    public List<String> listChats() {
-        return List.copyOf(chats.keySet());
+    public List<Pair<String, String>> listChats() {
+        var result = new ArrayList<Pair<String, String>>();
+        for (var chat : chats.values()) {
+            result.add(Pair.of(
+                    chat.getName(),
+                    chat.getCipherAlgorithm().name().replace("_", "/"))
+            );
+        }
+        return result;
     }
 
 

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.eflerrr.server.controller.dto.request.CreateChatRequest;
+import org.eflerrr.server.controller.dto.response.ListChatsResponse;
 import org.eflerrr.server.service.ChatService;
 import org.eflerrr.server.service.dto.ClientInfo;
 import org.springframework.http.HttpStatus;
@@ -167,9 +168,17 @@ public class ChatController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<String>> listChats() {
+    public ResponseEntity<List<ListChatsResponse>> listChats() {
+        var chatList = chatService.listChats();
+        List<ListChatsResponse> responseList = chatList.isEmpty()
+                ? List.of() : chatList.stream()
+                .map(chat -> ListChatsResponse.builder()
+                        .chatName(chat.getKey())
+                        .cipherAlgorithm(chat.getValue())
+                        .build())
+                .toList();
         return ResponseEntity
-                .ok(chatService.listChats());
+                .ok(responseList);
     }
 
 
