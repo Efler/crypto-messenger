@@ -1,0 +1,13 @@
+app-configs:
+  server-url: localhost:8080
+
+spring:
+  application:
+    name: client
+
+springdoc:
+  swagger-ui:
+    path: /endpoints
+
+server:
+  port: 8081
