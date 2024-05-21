@@ -1,6 +1,18 @@
 todo.txt
 docker-volumes/
 
+client/gradle/
+client/.gradle/
+client/build/
+client/frontend/generated/
+client/node_modules/
+client/package-lock.json
+client/package.json
+client/tsconfig.json
+client/types.d.ts
+client/vite.config.ts
+client/vite.generated.ts
+
 server/gradle/
 server/.gradle/
 server/build/
