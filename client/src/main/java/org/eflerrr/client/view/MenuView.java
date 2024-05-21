@@ -121,7 +121,6 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
                                     "chat/" + clientName + "/" + chatInfo.getChatName()
                             ));
                         });
-                        chatButton.addClickShortcut(Key.ENTER);
                         listLayout.add(chatButton);
                     }
 
