@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.eflerrr.client.client.ChatListUpdateServerClient;
+import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.client.dto.ChatInfo;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ChatListUpdateScheduler {
 
-    private final ChatListUpdateServerClient serverUpdateClient;
+    private final ServerClient serverClient;
     private final ComponentEventBus eventBus = new ComponentEventBus(new Div());
     private boolean isRunning = false;
     private List<ChatInfo> previousList = null;
@@ -46,7 +46,7 @@ public class ChatListUpdateScheduler {
     public void updateChatList() {
         if (isRunning) {
             log.info("Updating chat list in scheduler");
-            var chats = serverUpdateClient.requestChatList();
+            var chats = serverClient.requestChatList();
             if (previousList == null || !previousList.equals(chats)) {
                 log.info("Invoking an event for chat list update");
                 previousList = chats;

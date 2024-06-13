@@ -7,6 +7,7 @@
     align-items: center;
     height: 100vh;
     background-color: var(--secondary-color);
+    /*overflow: hidden;*/
 }
 
 .headers {
@@ -26,20 +27,38 @@
     box-sizing: border-box;
 }
 .list-chat-button {
-    width: 450px;
+    --vaadin-button-height: 50px;
+    width: 350px;
     margin-top: 10px;
     margin-bottom: 10px;
     color: var(--secondary-color);
     background-color: var(--primary-color);
     font-family: var(--app-font), cursive;
+    font-weight: bold;
     --vaadin-button-font-size: 25px;
-    --vaadin-button-height: 50px;
 }
 .list-chat-button:hover {
     background-color: var(--hover-color);
 }
 .list-chat-button:active {
     background-color: var(--active-color);
+}
+.list-chat-algorithm {
+    --vaadin-button-height: 35px;
+    width: 150px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 25px;
+    color: var(--secondary-color);
+    background-color: var(--dark-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    border-radius: 20px;
+    --vaadin-button-font-size: 16px;
+}
+.row-layout {
+    width: 50%;
+    box-sizing: border-box;
 }
 .loading-chats-label {
     color: var(--hover-color);
@@ -59,21 +78,59 @@
 }
 
 .create-layout {
+    position: fixed;
+    left: 25%;
     width: 50%;
     padding: 20px;
     box-sizing: border-box;
 }
+.create-name-field {
+    width: 250px;
+    color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 25px;
+}
+.create-box {
+    width: 200px;
+    color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 25px;
+}
+.create-input-layout {
+    margin-top: 100px;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--secondary-color);
+}
+.create-button {
+    --vaadin-button-height: 40px;
+    width: 460px;
+    color: var(--secondary-color);
+    background-color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 20px;
+}
+.create-button:hover {
+    background-color: var(--hover-color);
+}
+.create-button:active {
+    background-color: var(--active-color);
+}
 
 .divider {
-    position: relative;
+    position: fixed;
     width: 3px;
+    left: 50%;
     height: 100%;
     background-color: var(--primary-color);
     z-index: 1;
 }
 
 .or-label {
-    position: absolute;
+    position: fixed;
     width: 70px;
     top: 50%;
     left: 50%;
@@ -87,4 +144,132 @@
     border: 2px solid var(--secondary-color);
     z-index: 2;
     font-weight: bold;
+}
+.mock-layout {
+    width: 50%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.settings-layout {
+    position: fixed;
+    z-index: 4;
+    height: 40%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--secondary-color);
+    box-shadow: 0 0 30px 10px var(--primary-color);
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 0;
+}
+.settings-header {
+    color: var(--primary-color);
+    margin-bottom: 50px;
+}
+.settings-input-layout {
+    justify-content: center;
+    align-items: center;
+    background-color: var(--secondary-color);
+}
+.settings-mode-box {
+    width: 150px;
+    color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 25px;
+}
+.settings-padding-box {
+    width: 150px;
+    color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 25px;
+}
+.settings-confirm-button {
+    margin-top: 20px;
+    --vaadin-button-height: 40px;
+    width: 310px;
+    color: var(--secondary-color);
+    background-color: var(--primary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 17px;
+}
+.settings-confirm-button:hover {
+    background-color: var(--hover-color);
+}
+.settings-confirm-button:active {
+    background-color: var(--active-color);
+}
+.settings-close-button {
+    --vaadin-button-height: 40px;
+    width: 310px;
+    color: var(--secondary-color);
+    background-color: var(--dark-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-font-size: 17px;
+}
+
+
+.darken-layout {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0);
+    z-index: 3;
+    overflow: hidden;
+}
+
+.darken {
+    animation: darken 700ms forwards;
+}
+@keyframes darken {
+    100% {
+        background: rgba(0, 0, 0, 0.7);
+    }
+}
+
+.show-settings {
+    animation: show-settings 700ms forwards;
+}
+@keyframes show-settings {
+    100% {
+        opacity: 100%;
+    }
+}
+
+
+vaadin-notification-card::part(overlay) {
+    background-color: var(--primary-color);
+}
+
+vaadin-notification-card::part(content) {
+    font-family: var(--app-font), cursive;
+}
+
+vaadin-combo-box-overlay::part(overlay) {
+    box-shadow: none;
+}
+
+vaadin-combo-box-overlay::part(content) {
+    background-color: var(--secondary-color);
+    box-shadow: none;
+}
+
+vaadin-combo-box-item {
+    font-family: var(--app-font), cursive;
+    text-align: center;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+vaadin-combo-box-item:hover {
+    background-color: var(--dark-color);
+}
+
+vaadin-combo-box-item::part(checkmark)::before {
+    color: var(--primary-color);
 }

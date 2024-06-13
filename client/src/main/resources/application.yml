@@ -3,6 +3,10 @@ app-configs:
   chat-list:
     update-interval: 3000ms
     endpoint: /chat/list
+  chat-endpoint: /chat
+  server:
+    host: localhost
+    port: 8081
 
 spring:
   application:
@@ -13,4 +17,4 @@ springdoc:
     path: /endpoints
 
 server:
-  port: 8081
+  port: ${app-configs.server.port}
