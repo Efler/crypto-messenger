@@ -20,7 +20,7 @@ public class HelloView extends VerticalLayout {
     private static final String HEADER_TEXT = "Приветик, как тебя зовут?";
     private static final String NAME_FIELD_PLACEHOLDER = "Введи имя...";
     private static final String SUBMIT_BUTTON_TEXT = "Ввод";
-    private static final String NOTIFICATION_TEXT = "Некорректное имя: только буквы и цифры, друг!";
+    private static final String NOTIFICATION_TEXT = "Некорректное имя: только латинские буквы и цифры, друг!";
 
 
     private boolean isValidUsername(String username) {
@@ -42,9 +42,10 @@ public class HelloView extends VerticalLayout {
         nameField.setPlaceholder(NAME_FIELD_PLACEHOLDER);
         nameField.addClassName("name-field");
         nameField.addThemeVariants(TextFieldVariant.LUMO_ALIGN_CENTER);
+        nameField.getElement().setAttribute("autocomplete", "off");
 
         Notification notification = new Notification(
-                NOTIFICATION_TEXT, 5000, Notification.Position.TOP_CENTER);
+                NOTIFICATION_TEXT, 5000, Notification.Position.BOTTOM_CENTER);
 
         Button submitButton = new Button(SUBMIT_BUTTON_TEXT);
         submitButton.addClassName("submit-button");
