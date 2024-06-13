@@ -2,18 +2,12 @@ package org.eflerrr.encrypt.mode;
 
 import org.eflerrr.encrypt.encryptor.IEncryptor;
 import org.eflerrr.encrypt.mode.impl.*;
+import org.eflerrr.encrypt.types.EncryptionMode;
 
 public class EncryptModes {
 
-    public enum Mode {
-        ECB,
-        CBC, PCBC,
-        CFB, OFB,
-        CTR, RandomDelta
-    }
-
     public static AEncryptMode getMode(
-            Mode mode,
+            EncryptionMode mode,
             IEncryptor encryptor,
             byte[] initializationVector) {
         int size = encryptor.getBlockLength() / Byte.SIZE;

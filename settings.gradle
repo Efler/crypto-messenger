@@ -1,2 +1,2 @@
 rootProject.name = 'cryptomessenger'
-
+include 'server', 'client', 'cipher'

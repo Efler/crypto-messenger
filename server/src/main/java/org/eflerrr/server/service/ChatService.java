@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.eflerrr.server.client.HttpClient;
 import org.eflerrr.server.configuration.ApplicationConfig;
 import org.eflerrr.server.controller.dto.DiffieHellmanParams;
@@ -36,14 +37,9 @@ public class ChatService {
 
     public static final String CHAT_NOT_EXIST_ERROR_MESSAGE = "Chat with name %s does not exist";
 
-    public enum CipherAlgorithm {
-        RC5,
-        RC6
-    } // TODO! More algorithms!
-
 
     public CreateChatResponse createChat(
-            String chatName, CipherAlgorithm algorithm, ClientInfo creator
+            String chatName, EncryptionAlgorithm algorithm, ClientInfo creator
     ) {
         for (var existingName : chats.keySet()) {
             if (chatName.equals(existingName)) {
@@ -70,7 +66,7 @@ public class ChatService {
 
         Chat chat = Chat.builder()
                 .name(chatName)
-                .cipherAlgorithm(algorithm)
+                .encryptionAlgorithm(algorithm)
                 .clients(clients)
                 .clientsCount(creator == null ? 0 : 1)
                 .creatorId(creator == null ? null : creator.getId())
@@ -91,7 +87,7 @@ public class ChatService {
                 .build();
     }
 
-    private void createChat(String chatName, CipherAlgorithm algorithm) {
+    private void createChat(String chatName, EncryptionAlgorithm algorithm) {
         createChat(chatName, algorithm, null);
     }
 
@@ -123,7 +119,7 @@ public class ChatService {
                         .bootstrapServers(config.kafka().bootstrapServers())
                         .topic(chat.getKafkaTopic().name())
                         .build())
-                .cipherAlgorithm(chat.getCipherAlgorithm())
+                .encryptionAlgorithm(chat.getEncryptionAlgorithm())
                 .build();
     }
 
@@ -175,7 +171,7 @@ public class ChatService {
         for (var chat : chats.values()) {
             result.add(Pair.of(
                     chat.getName(),
-                    chat.getCipherAlgorithm().name().replace("_", "/"))
+                    chat.getEncryptionAlgorithm().toString())
             );
         }
         return result;

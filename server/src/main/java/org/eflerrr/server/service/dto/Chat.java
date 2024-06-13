@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.eflerrr.server.service.ChatService;
+import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 
 import java.math.BigInteger;
 import java.util.Map;
@@ -20,7 +20,7 @@ public class Chat {
     private String name;
 
     @NotNull
-    private ChatService.CipherAlgorithm cipherAlgorithm;
+    private EncryptionAlgorithm encryptionAlgorithm;
 
     private Map<Long, ClientInfo> clients;
 

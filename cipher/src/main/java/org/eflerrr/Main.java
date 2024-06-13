@@ -3,13 +3,13 @@ package org.eflerrr;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.encrypt.manager.EncryptorManager;
 import org.eflerrr.encrypt.mode.EncryptModes;
-import org.eflerrr.padding.Paddings;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 
-import static org.eflerrr.encrypt.manager.EncryptorManager.EncryptionAlgorithm.RC6_32_20_32;
-import static org.eflerrr.encrypt.manager.EncryptorManager.EncryptionAlgorithm.RC6_DEFAULT;
+import static org.eflerrr.encrypt.types.EncryptionAlgorithm.RC6_DEFAULT;
 import static org.eflerrr.utils.Utils.generateIV;
 
 @Slf4j
@@ -33,8 +33,8 @@ public class Main {
                         (byte) 0x00, (byte) 0xDD, (byte) 0x8E, (byte) 0x0F
                 },
                 RC6_DEFAULT,
-                EncryptModes.Mode.RandomDelta,
-                Paddings.PaddingType.ISO10126,
+                EncryptionMode.RandomDelta,
+                PaddingType.ISO10126,
                 generateIV(32)
         );
 

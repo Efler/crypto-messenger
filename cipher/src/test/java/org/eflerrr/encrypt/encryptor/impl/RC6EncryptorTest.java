@@ -2,8 +2,9 @@ package org.eflerrr.encrypt.encryptor.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.encrypt.manager.EncryptorManager;
-import org.eflerrr.encrypt.mode.EncryptModes;
-import org.eflerrr.padding.Paddings;
+import org.eflerrr.encrypt.types.EncryptionAlgorithm;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,7 +19,7 @@ import java.nio.file.Paths;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.eflerrr.encrypt.manager.EncryptorManager.EncryptionAlgorithm.*;
+import static org.eflerrr.encrypt.types.EncryptionAlgorithm.*;
 import static org.eflerrr.utils.Utils.bytesToHexString;
 import static org.eflerrr.utils.Utils.generateIV;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,33 +57,33 @@ class RC6EncryptorTest {
     // -------- Data providers -------- //
 
     private static Stream<Arguments> WordLengthTest_16_provideFileTestData() {
-        return Stream.of(new EncryptorManager.EncryptionAlgorithm[]{
+        return Stream.of(new EncryptionAlgorithm[]{
                         RC6_16_20_16, RC6_16_20_24, RC6_16_20_32,
                 })
-                .flatMap(algorithm -> Stream.of(EncryptModes.Mode.values())
-                        .flatMap(mode -> Stream.of(Paddings.PaddingType.values())
+                .flatMap(algorithm -> Stream.of(EncryptionMode.values())
+                        .flatMap(mode -> Stream.of(PaddingType.values())
                                 .flatMap(type -> IntStream.range(1, 9)
                                         .mapToObj(threads -> Arguments.of(
                                                 algorithm, mode, type, threads)))));
     }
 
     private static Stream<Arguments> WordLengthTest_32_provideFileTestData() {
-        return Stream.of(new EncryptorManager.EncryptionAlgorithm[]{
+        return Stream.of(new EncryptionAlgorithm[]{
                         RC6_32_20_16, RC6_32_20_24, RC6_32_20_32,
                 })
-                .flatMap(algorithm -> Stream.of(EncryptModes.Mode.values())
-                        .flatMap(mode -> Stream.of(Paddings.PaddingType.values())
+                .flatMap(algorithm -> Stream.of(EncryptionMode.values())
+                        .flatMap(mode -> Stream.of(PaddingType.values())
                                 .flatMap(type -> IntStream.range(1, 9)
                                         .mapToObj(threads -> Arguments.of(
                                                 algorithm, mode, type, threads)))));
     }
 
     private static Stream<Arguments> WordLengthTest_64_provideFileTestData() {
-        return Stream.of(new EncryptorManager.EncryptionAlgorithm[]{
+        return Stream.of(new EncryptionAlgorithm[]{
                         RC6_64_20_16, RC6_64_20_24, RC6_64_20_32,
                 })
-                .flatMap(algorithm -> Stream.of(EncryptModes.Mode.values())
-                        .flatMap(mode -> Stream.of(Paddings.PaddingType.values())
+                .flatMap(algorithm -> Stream.of(EncryptionMode.values())
+                        .flatMap(mode -> Stream.of(PaddingType.values())
                                 .flatMap(type -> IntStream.range(1, 9)
                                         .mapToObj(threads -> Arguments.of(
                                                 algorithm, mode, type, threads)))));
@@ -91,7 +92,7 @@ class RC6EncryptorTest {
 
     // -------- Choosing key size function -------- //
 
-    private int getKeySize(EncryptorManager.EncryptionAlgorithm algorithm) {
+    private int getKeySize(EncryptionAlgorithm algorithm) {
         return switch (algorithm) {
             case RC6_16_20_16, RC6_32_20_16, RC6_64_20_16 -> 16;
             case RC6_16_20_24, RC6_32_20_24, RC6_64_20_24 -> 24;
@@ -106,9 +107,9 @@ class RC6EncryptorTest {
     @ParameterizedTest
     @MethodSource("WordLengthTest_16_provideFileTestData")
     public void WordLengthTest_16(
-            EncryptorManager.EncryptionAlgorithm algorithm,
-            EncryptModes.Mode mode,
-            Paddings.PaddingType type,
+            EncryptionAlgorithm algorithm,
+            EncryptionMode mode,
+            PaddingType type,
             int threads
     ) throws IOException {
 
@@ -148,9 +149,9 @@ class RC6EncryptorTest {
     @ParameterizedTest
     @MethodSource("WordLengthTest_32_provideFileTestData")
     public void WordLengthTest_32(
-            EncryptorManager.EncryptionAlgorithm algorithm,
-            EncryptModes.Mode mode,
-            Paddings.PaddingType type,
+            EncryptionAlgorithm algorithm,
+            EncryptionMode mode,
+            PaddingType type,
             int threads
     ) throws IOException {
 
@@ -190,9 +191,9 @@ class RC6EncryptorTest {
     @ParameterizedTest
     @MethodSource("WordLengthTest_64_provideFileTestData")
     public void WordLengthTest_64(
-            EncryptorManager.EncryptionAlgorithm algorithm,
-            EncryptModes.Mode mode,
-            Paddings.PaddingType type,
+            EncryptionAlgorithm algorithm,
+            EncryptionMode mode,
+            PaddingType type,
             int threads
     ) throws IOException {
 

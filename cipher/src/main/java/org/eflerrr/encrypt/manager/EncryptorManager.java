@@ -4,9 +4,10 @@ import org.eflerrr.encrypt.encryptor.IEncryptor;
 import org.eflerrr.encrypt.encryptor.impl.RC5Encryptor;
 import org.eflerrr.encrypt.encryptor.impl.RC6Encryptor;
 import org.eflerrr.encrypt.mode.AEncryptMode;
-import org.eflerrr.encrypt.mode.EncryptModes;
+import org.eflerrr.encrypt.types.EncryptionAlgorithm;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.eflerrr.padding.IPadding;
-import org.eflerrr.padding.Paddings;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,17 +24,6 @@ import static org.eflerrr.encrypt.mode.EncryptModes.getMode;
 import static org.eflerrr.padding.Paddings.getPadding;
 
 public class EncryptorManager {
-
-    public enum EncryptionAlgorithm {
-        RC5_16_12_16, RC5_16_12_24, RC5_16_12_32,
-        RC5_32_12_16, RC5_32_12_24, RC5_32_12_32,
-        RC5_64_12_16, RC5_64_12_24, RC5_64_12_32,
-        RC5_DEFAULT,
-        RC6_16_20_16, RC6_16_20_24, RC6_16_20_32,
-        RC6_32_20_16, RC6_32_20_24, RC6_32_20_32,
-        RC6_64_20_16, RC6_64_20_24, RC6_64_20_32,
-        RC6_DEFAULT
-    }
 
     protected static IEncryptor getEncryptor(EncryptionAlgorithm algorithm) {
         return switch (algorithm) {
@@ -67,8 +57,8 @@ public class EncryptorManager {
     public EncryptorManager(
             byte[] key,
             IEncryptor encryptor,
-            EncryptModes.Mode mode,
-            Paddings.PaddingType type,
+            EncryptionMode mode,
+            PaddingType type,
             byte[] initializationVector) {
         kernelMode = getMode(mode, encryptor.setKey(key), initializationVector);
         padding = getPadding(type);
@@ -78,8 +68,8 @@ public class EncryptorManager {
     public EncryptorManager(
             byte[] key,
             EncryptionAlgorithm algorithm,
-            EncryptModes.Mode mode,
-            Paddings.PaddingType type,
+            EncryptionMode mode,
+            PaddingType type,
             byte[] initializationVector) {
         this(key, getEncryptor(algorithm), mode, type, initializationVector);
     }

@@ -11,6 +11,6 @@ public class ListChatsResponse {
     @NotBlank
     private String chatName;
     @NotBlank
-    private String cipherAlgorithm;
+    private String encryptionAlgorithm;
 
 }

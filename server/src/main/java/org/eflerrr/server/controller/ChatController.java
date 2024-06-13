@@ -46,7 +46,7 @@ public class ChatController {
         try {
             var chatServiceResponse = chatService.createChat(
                     createChatRequest.getChatName(),
-                    createChatRequest.getCipherAlgorithm(),
+                    createChatRequest.getEncryptionAlgorithm(),
                     ClientInfo.builder()
                             .id(clientId)
                             .name(clientName)
@@ -174,7 +174,7 @@ public class ChatController {
                 ? List.of() : chatList.stream()
                 .map(chat -> ListChatsResponse.builder()
                         .chatName(chat.getKey())
-                        .cipherAlgorithm(chat.getValue())
+                        .encryptionAlgorithm(chat.getValue())
                         .build())
                 .toList();
         return ResponseEntity

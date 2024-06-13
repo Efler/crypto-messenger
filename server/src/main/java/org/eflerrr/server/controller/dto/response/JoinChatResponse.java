@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
+import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.eflerrr.server.controller.dto.DiffieHellmanParams;
 import org.eflerrr.server.controller.dto.KafkaInfo;
-import org.eflerrr.server.service.ChatService;
 import org.springframework.validation.annotation.Validated;
 
 @Data
@@ -19,6 +19,6 @@ public class JoinChatResponse {
     @Valid
     private KafkaInfo kafkaInfo;
     @NotNull
-    private ChatService.CipherAlgorithm cipherAlgorithm;
+    private EncryptionAlgorithm encryptionAlgorithm;
 
 }

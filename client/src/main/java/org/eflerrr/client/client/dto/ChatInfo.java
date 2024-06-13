@@ -15,11 +15,6 @@ public class ChatInfo {
     @NotBlank
     private String chatName;
     @NotBlank
-    private String cipherAlgorithm;
-
-    @Override
-    public String toString() {
-        return chatName + " - [" + cipherAlgorithm + "]";
-    }
+    private String encryptionAlgorithm;
 
 }
