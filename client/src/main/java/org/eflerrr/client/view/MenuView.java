@@ -18,6 +18,7 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.Lumo;
 import lombok.extern.slf4j.Slf4j;
@@ -103,7 +104,20 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
                 var chosenAlgo = createBox.getValue();
                 try {
                     menuService.createChat(chosenName, chosenAlgo);
-                    // TODO! REDIRECT TO CHAT VIEW
+                    VaadinSession.getCurrent().setAttribute("raw-entry-check", true);
+                    VaadinSession.getCurrent().setAttribute("is-creation", true);
+                    VaadinSession.getCurrent().setAttribute("chat-name", chosenName);
+                    VaadinSession.getCurrent().setAttribute("encryption-algorithm", chosenAlgo);
+                    VaadinSession.getCurrent().setAttribute("encryption-mode", chosenMode);
+                    VaadinSession.getCurrent().setAttribute("padding-type", chosenPadding);
+                    VaadinSession.getCurrent().setAttribute("client-id", menuService.getClientId());
+                    VaadinSession.getCurrent().setAttribute("client-name", menuService.getClientName());
+                    VaadinSession.getCurrent().setAttribute("public-key", menuService.getPublicKey());
+                    VaadinSession.getCurrent().setAttribute("private-key", menuService.getPrivateKey());
+                    VaadinSession.getCurrent().setAttribute("last-p", menuService.getLastP());
+                    VaadinSession.getCurrent().setAttribute("kafka-info", menuService.getKafkaInfo());
+
+                    getUI().ifPresent(ui -> ui.navigate("chat/" + chosenName));
                 } catch (IllegalArgumentException e) {
                     errorNotification.setText(e.getMessage());
                     errorNotification.open();

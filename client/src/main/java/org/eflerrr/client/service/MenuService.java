@@ -1,5 +1,6 @@
 package org.eflerrr.client.service;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.client.dto.KafkaInfo;
@@ -11,6 +12,7 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 
 @Service
+@Getter
 @Slf4j
 public class MenuService {
 
@@ -19,6 +21,7 @@ public class MenuService {
     private final BigInteger privateKey;
     private final ServerClient serverClient;
     private BigInteger publicKey;
+    private BigInteger lastP;
     private KafkaInfo kafkaInfo;
     private String clientName;
     private long clientId;
@@ -56,6 +59,7 @@ public class MenuService {
                 serverResponse.getDiffieHellmanParams().getG(),
                 serverResponse.getDiffieHellmanParams().getP()
         );
+        this.lastP = serverResponse.getDiffieHellmanParams().getP();
         this.kafkaInfo = serverResponse.getKafkaInfo();
     }
 

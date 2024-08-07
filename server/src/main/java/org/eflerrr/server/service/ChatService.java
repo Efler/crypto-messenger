@@ -41,10 +41,8 @@ public class ChatService {
     public CreateChatResponse createChat(
             String chatName, EncryptionAlgorithm algorithm, ClientInfo creator
     ) {
-        for (var existingName : chats.keySet()) {
-            if (chatName.equals(existingName)) {
-                throw new IllegalArgumentException("Chat with name " + chatName + " already exists");
-            }
+        if (chats.containsKey(chatName)) {
+            throw new IllegalArgumentException("Chat with name " + chatName + " already exists");
         }
 
         var topicName = chatName + config.kafka().topicsPostfix();
