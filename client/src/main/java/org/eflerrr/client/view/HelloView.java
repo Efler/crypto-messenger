@@ -12,7 +12,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.Lumo;
 
-@Route("/hello")
+@Route("hello")
 @PageTitle("Hello")
 @CssImport("./styles/hello/hello-styles.css")
 public class HelloView extends VerticalLayout {

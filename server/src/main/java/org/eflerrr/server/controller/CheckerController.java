@@ -23,8 +23,7 @@ public class CheckerController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping
-    @RequestMapping("/chat/client-leaving")
+    @DeleteMapping("/chat/client-leaving")
     public ResponseEntity<Void> notifyClientLeaving() {
         log.warn("CHECKER CONTROLLER: notifying Client Leaving");
         return ResponseEntity.ok().build();

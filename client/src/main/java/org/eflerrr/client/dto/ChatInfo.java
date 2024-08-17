@@ -1,4 +1,4 @@
-package org.eflerrr.client.client.dto;
+package org.eflerrr.client.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;

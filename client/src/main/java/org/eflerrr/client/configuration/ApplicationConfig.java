@@ -23,17 +23,16 @@ public record ApplicationConfig(
         @NotBlank
         String chatEndpoint,
         @Valid
-        Server server
+        Server server,
+        FileUpload fileUpload
 
 ) {
 
     public record ChatList(
-
             //@Min(200) TODO! uncomment this line
             Duration updateInterval,
             @NotBlank
             String endpoint
-
     ) {
     }
 
@@ -42,8 +41,17 @@ public record ApplicationConfig(
             String host,
             @Min(1024)
             @Max(49151)
-            int port
+            int port,
+            @NotBlank
+            String gatewayUrl
+    ) {
+    }
 
+    public record FileUpload(
+            boolean inMemory,
+            @Min(1)
+            @Max(10485760)  // 10 Mb
+            int fileMaxSize
     ) {
     }
 

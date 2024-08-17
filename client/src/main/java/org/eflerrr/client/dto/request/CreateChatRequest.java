@@ -1,4 +1,4 @@
-package org.eflerrr.client.client.dto.request;
+package org.eflerrr.client.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

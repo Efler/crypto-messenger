@@ -105,7 +105,7 @@ public class ChatService {
         chat.setClientsCount(chat.getClientsCount() + 1);
 
         var creator = chat.getClients().get(chat.getCreatorId());
-        var publicKey = httpClient.getPublicKey(creator.getHost(), creator.getPort());
+        var publicKey = httpClient.getPublicKey(creator.getHost(), creator.getPort(), client.getName());
         creator.setPublicKey(publicKey);
 
         return JoinChatResponse.builder()
@@ -118,6 +118,7 @@ public class ChatService {
                         .topic(chat.getKafkaTopic().name())
                         .build())
                 .encryptionAlgorithm(chat.getEncryptionAlgorithm())
+                .mateName(creator.getName())
                 .build();
     }
 

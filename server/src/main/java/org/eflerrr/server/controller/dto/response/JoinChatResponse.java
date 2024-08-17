@@ -1,6 +1,7 @@
 package org.eflerrr.server.controller.dto.response;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
@@ -20,5 +21,7 @@ public class JoinChatResponse {
     private KafkaInfo kafkaInfo;
     @NotNull
     private EncryptionAlgorithm encryptionAlgorithm;
+    @NotBlank
+    private String mateName;
 
 }

@@ -1,9 +1,9 @@
 package org.eflerrr.client.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eflerrr.client.client.dto.ChatInfo;
-import org.eflerrr.client.client.dto.request.CreateChatRequest;
-import org.eflerrr.client.client.dto.response.CreateChatResponse;
+import org.eflerrr.client.dto.ChatInfo;
+import org.eflerrr.client.dto.request.CreateChatRequest;
+import org.eflerrr.client.dto.response.CreateChatResponse;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,5 +64,7 @@ public class ServerClient {
                 .bodyToMono(CreateChatResponse.class)
                 .block();
     }
+
+    // todo: join chat!
 
 }

@@ -16,9 +16,10 @@ public class HttpClient {
     private static final String NOTIFY_CLIENT_LEAVING_URL = "http://%s:%d/chat/client-leaving";
     private final WebClient webClient = WebClient.create();
 
-    public BigInteger getPublicKey(String host, int port) {
+    public BigInteger getPublicKey(String host, int port, String mateName) {
         return webClient.get()
                 .uri(String.format(PUBLIC_KEY_URL, host, port))
+                .header("mate-name", mateName)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         Mono.error(new IllegalStateException("Client does not have public key")))

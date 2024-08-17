@@ -1,10 +1,10 @@
-package org.eflerrr.client.client.dto.response;
+package org.eflerrr.client.dto.response;
 
 import jakarta.validation.Valid;
 import lombok.Builder;
 import lombok.Data;
-import org.eflerrr.client.client.dto.DiffieHellmanParams;
-import org.eflerrr.client.client.dto.KafkaInfo;
+import org.eflerrr.client.dto.DiffieHellmanParams;
+import org.eflerrr.client.dto.KafkaInfo;
 import org.springframework.validation.annotation.Validated;
 
 @Data

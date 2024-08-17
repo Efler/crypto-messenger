@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.client.ServerClient;
-import org.eflerrr.client.client.dto.ChatInfo;
+import org.eflerrr.client.dto.ChatInfo;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

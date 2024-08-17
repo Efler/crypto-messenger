@@ -18,11 +18,12 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.Lumo;
 import lombok.extern.slf4j.Slf4j;
-import org.eflerrr.client.client.dto.ChatInfo;
+import org.eflerrr.client.dao.ChatDao;
+import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.client.dto.ChatInfo;
 import org.eflerrr.client.scheduler.ChatListUpdateScheduler;
 import org.eflerrr.client.service.MenuService;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
@@ -38,8 +39,12 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
 
     private final static String INVALID_INPUT_NOTIFICATION_TEXT = "Некорректные параметры для создания чата";
     private final static String INVALID_SETTINGS_NOTIFICATION_TEXT = "Некорректные настройки шифрования";
+
     private final MenuService menuService;
     private final ChatListUpdateScheduler scheduler;
+    private final ClientDao clientDao;
+    private final ChatDao chatDao;
+
     private final Notification errorNotification = new Notification(
             "Неизвестная ошибка, попробуйте позже!",
             5000, Notification.Position.BOTTOM_CENTER
@@ -52,8 +57,6 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     private final ComboBox<EncryptionMode> settingsModeBox;
     private final ComboBox<PaddingType> settingsPaddingBox;
     private Registration registration;
-    private boolean isCreation = true;
-    private String joinChatName = null;
 
 
     private void enableDarkenLayout() {
@@ -66,17 +69,12 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         darkenLayout.getClassNames().remove("darken");
     }
 
-    private boolean validateChatName(String username) {
-        return username != null
-                && !username.trim().isEmpty()
-                && username.matches("[a-zA-Z0-9]+");
-    }
-
     private void onCreateChatButtonClick() {
         var chosenName = createNameField.getValue();
         var chosenAlgo = createBox.getValue();
-        if (validateChatName(chosenName) && chosenAlgo != null) {
-            isCreation = true;
+        if (menuService.validateChatName(chosenName) && chosenAlgo != null) {
+            clientDao.setIsCreator(true);
+
             enableDarkenLayout();
             this.add(settingsLayout);
             settingsLayout.getClassNames().add("show-settings");
@@ -87,8 +85,9 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     }
 
     private void onJoinChatButtonClick(String chosenName) {
-        isCreation = false;
-        joinChatName = chosenName;
+        clientDao.setIsCreator(false);
+        chatDao.setChatName(chosenName);
+
         enableDarkenLayout();
         this.add(settingsLayout);
         settingsLayout.getClassNames().add("show-settings");
@@ -98,26 +97,15 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         var chosenMode = settingsModeBox.getValue();
         var chosenPadding = settingsPaddingBox.getValue();
         if (chosenMode != null && chosenPadding != null) {
+            chatDao.setEncryptionMode(chosenMode);
+            chatDao.setPaddingType(chosenPadding);
 
-            if (isCreation) {
-                var chosenName = createNameField.getValue();
-                var chosenAlgo = createBox.getValue();
+            if (clientDao.getIsCreator()) {
+                chatDao.setChatName(createNameField.getValue());
+                chatDao.setEncryptionAlgorithm(createBox.getValue());
                 try {
-                    menuService.createChat(chosenName, chosenAlgo);
-                    VaadinSession.getCurrent().setAttribute("raw-entry-check", true);
-                    VaadinSession.getCurrent().setAttribute("is-creation", true);
-                    VaadinSession.getCurrent().setAttribute("chat-name", chosenName);
-                    VaadinSession.getCurrent().setAttribute("encryption-algorithm", chosenAlgo);
-                    VaadinSession.getCurrent().setAttribute("encryption-mode", chosenMode);
-                    VaadinSession.getCurrent().setAttribute("padding-type", chosenPadding);
-                    VaadinSession.getCurrent().setAttribute("client-id", menuService.getClientId());
-                    VaadinSession.getCurrent().setAttribute("client-name", menuService.getClientName());
-                    VaadinSession.getCurrent().setAttribute("public-key", menuService.getPublicKey());
-                    VaadinSession.getCurrent().setAttribute("private-key", menuService.getPrivateKey());
-                    VaadinSession.getCurrent().setAttribute("last-p", menuService.getLastP());
-                    VaadinSession.getCurrent().setAttribute("kafka-info", menuService.getKafkaInfo());
-
-                    getUI().ifPresent(ui -> ui.navigate("chat/" + chosenName));
+                    menuService.createChat();
+                    getUI().ifPresent(ui -> ui.navigate("chat/" + chatDao.getChatName()));
                 } catch (IllegalArgumentException e) {
                     errorNotification.setText(e.getMessage());
                     errorNotification.open();
@@ -154,9 +142,16 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
 
 
     @Autowired
-    public MenuView(MenuService menuService, ChatListUpdateScheduler scheduler) {
+    public MenuView(
+            MenuService menuService,
+            ChatListUpdateScheduler scheduler,
+            ChatDao chatDao,
+            ClientDao clientDao) {
         this.menuService = menuService;
         this.scheduler = scheduler;
+        this.chatDao = chatDao;
+        this.clientDao = clientDao;
+
         this.darkenLayout = new Div();
         darkenLayout.setClassName("darken-layout");
 
@@ -338,8 +333,9 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     }
 
     @Override
-    public void setParameter(BeforeEvent event, String parameter) {
-        menuService.setCredentials(parameter);
+    public void setParameter(BeforeEvent event, String clientName) {
+        clientDao.setClientName(clientName);
+        menuService.generateClientId();
     }
 
 }
