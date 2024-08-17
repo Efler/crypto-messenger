@@ -7,6 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.eflerrr.server.client.HttpClient;
 import org.eflerrr.server.configuration.ApplicationConfig;
 import org.eflerrr.server.controller.dto.DiffieHellmanParams;
@@ -20,6 +22,7 @@ import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -85,11 +88,8 @@ public class ChatService {
                 .build();
     }
 
-    private void createChat(String chatName, EncryptionAlgorithm algorithm) {
-        createChat(chatName, algorithm, null);
-    }
-
-    public JoinChatResponse joinChat(String chatName, ClientInfo client) {
+    public JoinChatResponse joinChat(
+            String chatName, ClientInfo client, EncryptionMode mode, PaddingType padding) throws InvalidKeyException {
         var chat = chats.get(chatName);
         if (chat == null) {
             throw new IllegalArgumentException(String.format(CHAT_NOT_EXIST_ERROR_MESSAGE, chatName));
@@ -101,12 +101,19 @@ public class ChatService {
             throw new IllegalCallerException(String.format("Client with id %d already in chat", client.getId()));
         }
 
+        ClientInfo creator = chat.getClients().get(chat.getCreatorId());;
+        try {
+            chat.getClients().get(chat.getCreatorId());
+            var creatorPublicKey = httpClient.getPublicKey(
+                    creator.getHost(), creator.getPort(), client.getName(), mode, padding);
+            creator.setPublicKey(creatorPublicKey);
+        } catch (IllegalStateException e) {
+            throw new InvalidKeyException((String.format(
+                    "Creator of the chat '%s' did not send his public key!", chatName)));
+        }
+
         chat.getClients().put(client.getId(), client);
         chat.setClientsCount(chat.getClientsCount() + 1);
-
-        var creator = chat.getClients().get(chat.getCreatorId());
-        var publicKey = httpClient.getPublicKey(creator.getHost(), creator.getPort(), client.getName());
-        creator.setPublicKey(publicKey);
 
         return JoinChatResponse.builder()
                 .diffieHellmanParams(DiffieHellmanParams.builder()
@@ -165,12 +172,12 @@ public class ChatService {
         }
     }
 
-    public List<Pair<String, String>> listChats() {
-        var result = new ArrayList<Pair<String, String>>();
+    public List<Pair<String, EncryptionAlgorithm>> listChats() {
+        var result = new ArrayList<Pair<String, EncryptionAlgorithm>>();
         for (var chat : chats.values()) {
             result.add(Pair.of(
                     chat.getName(),
-                    chat.getEncryptionAlgorithm().toString())
+                    chat.getEncryptionAlgorithm())
             );
         }
         return result;

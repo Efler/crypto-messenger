@@ -1,6 +1,8 @@
 package org.eflerrr.server.client;
 
 import lombok.RequiredArgsConstructor;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,16 +14,19 @@ import java.math.BigInteger;
 @RequiredArgsConstructor
 public class HttpClient {
 
-    private static final String PUBLIC_KEY_URL = "http://%s:%d/chat/public-key";
-    private static final String NOTIFY_CLIENT_LEAVING_URL = "http://%s:%d/chat/client-leaving";
+    private static final String PUBLIC_KEY_URL = "http://%s:%d/client-chat/public-key"; // TODO: replace to configs, no hardcode!
+    private static final String NOTIFY_CLIENT_LEAVING_URL = "http://%s:%d/client-chat/client-leaving"; // TODO: replace to configs, no hardcode!
     private final WebClient webClient = WebClient.create();
 
-    public BigInteger getPublicKey(String host, int port, String mateName) {
+    public BigInteger getPublicKey(
+            String host, int port, String mateName, EncryptionMode mateMode, PaddingType matePadding) {
         return webClient.get()
                 .uri(String.format(PUBLIC_KEY_URL, host, port))
-                .header("mate-name", mateName)
+                .header("Mate-Name", mateName)
+                .header("Encryption-Mode", mateMode.name())
+                .header("Padding-Type", matePadding.name())
                 .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                .onStatus(HttpStatusCode::is5xxServerError, response ->
                         Mono.error(new IllegalStateException("Client does not have public key")))
                 .bodyToMono(BigInteger.class)
                 .block();

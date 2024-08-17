@@ -3,7 +3,10 @@ package org.eflerrr.server.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.eflerrr.server.controller.dto.request.CreateChatRequest;
 import org.eflerrr.server.controller.dto.response.ListChatsResponse;
 import org.eflerrr.server.service.ChatService;
@@ -14,13 +17,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
 @Validated
-public class ChatController {
+public class ServerChatController {
 
     private final ChatService chatService;
 
@@ -80,7 +84,13 @@ public class ChatController {
             int clientPort,
             @NotBlank
             @RequestHeader(value = "Chat-Name")
-            String chatName
+            String chatName,
+            @NotNull
+            @RequestHeader(value = "Encryption-Mode")
+            EncryptionMode mode,
+            @NotNull
+            @RequestHeader(value = "Padding-Type")
+            PaddingType padding
     ) {
         try {
             var chatServiceResponse = chatService.joinChat(
@@ -91,10 +101,15 @@ public class ChatController {
                             .host(clientHost)
                             .port(clientPort)
                             .publicKey(null)
-                            .build());
+                            .build(),
+                    mode, padding);
             return ResponseEntity
                     .ok(chatServiceResponse);
 
+        } catch (InvalidKeyException e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
         } catch (IllegalArgumentException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)

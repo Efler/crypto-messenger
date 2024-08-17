@@ -1,5 +1,7 @@
 package org.eflerrr.client.view;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.H2;
@@ -15,13 +17,16 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.Lumo;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.client.model.event.MateJoiningEvent;
 import org.eflerrr.client.model.uploadbuffer.UploadBuffer;
 import org.eflerrr.client.service.ChatService;
+import org.eflerrr.client.util.UIUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -29,6 +34,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashSet;
+import java.util.Set;
 
 @Route("chat")
 @PageTitle("Chat")
@@ -36,9 +43,10 @@ import java.io.InputStreamReader;
 @Slf4j
 public class ChatView extends HorizontalLayout implements HasUrlParameter<String> {
 
-    private static final String MATE_ABSENT_NAME_PLACEHOLDER = "Имя: ожидаем...";
-    private static final String MATE_ABSENT_MODE_PLACEHOLDER = "Режим: ожидаем...";
-    private static final String MATE_ABSENT_PADDING_PLACEHOLDER = "Набивка: ожидаем...";
+    private static final String MATE_NAME_TEMPLATE = "Имя: %s";
+    private static final String MATE_MODE_TEMPLATE = "Режим: %s";
+    private static final String MATE_PADDING_TEMPLATE = "Набивка: %s";
+    private static final String MATE_ABSENT_PLACEHOLDER = "ожидаем...";
 
     private final H2 statusHeader;
     private final H2 encryptionAlgorithmLabel;
@@ -49,7 +57,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private final VerticalLayout clientPropsLayout;
     private final H3 matePropsHeader;
     private final H3 matePropsNameLabel;
-    private final H3 matePropsEncrtyptionModeLabel;
+    private final H3 matePropsEncryptionModeLabel;
     private final H3 matePropsPaddingTypeLabel;
     private final VerticalLayout matePropsLayout;
     private final VerticalLayout statusLayout;
@@ -57,7 +65,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private final VerticalLayout loadingLayout;
     private final VerticalLayout loadingPatch;
     private final H3 loadingLabel;
-    private final Image loaadingSpinner;
+    private final Image loadingSpinner;
     private final VerticalLayout messagesLayout;
     private final HorizontalLayout inputPanelLayout;
     private final TextField inputTextField;
@@ -70,6 +78,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private final ChatDao chatDao;
     private final ClientDao clientDao;
     private final ApplicationConfig config;
+    private final Set<Registration> eventRegistrations;
     private String chatName;
 
 
@@ -100,12 +109,31 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
     private void lockInput() {
         inputPanelLayout.setEnabled(false);
-//        fileButton.setEnabled(false);     todo!
+        fileButton.setEnabled(false);
     }
 
     private void unlockInput() {
         inputPanelLayout.setEnabled(true);
         fileButton.setEnabled(true);
+    }
+
+    private void onMateJoiningEvent(MateJoiningEvent mateJoiningEvent) {
+        UIUtils.executeWithLockUI(getUI(), mateJoiningEvent, (rawEvent) -> {
+
+            var event = (MateJoiningEvent) rawEvent;
+            var mateName = String.format(MATE_NAME_TEMPLATE, event.getMateName());
+            var mateMode = String.format(MATE_MODE_TEMPLATE, event.getMateMode());
+            var matePadding = String.format(MATE_PADDING_TEMPLATE, event.getMatePadding());
+
+            matePropsHeader.setClassName("props-header");
+            matePropsNameLabel.setClassName("props-label-contrast");
+            matePropsNameLabel.setText(mateName);
+            matePropsEncryptionModeLabel.setText(mateMode);
+            matePropsPaddingTypeLabel.setText(matePadding);
+
+            loadingLabel.setText("Обмен публичными ключами...");
+
+        });
     }
 
 
@@ -121,6 +149,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         this.chatDao = chatDao;
         this.clientDao = clientDao;
         this.config = config;
+        this.eventRegistrations = new HashSet<>();
         this.uploadBuffer = uploadBuffer;
         setClassName("host-layout");
 
@@ -133,7 +162,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         clientPropsHeader = new H3("Вы");
         clientPropsHeader.setClassName("props-header");
         clientPropsNameLabel = new H3("Имя: " + clientDao.getClientName());
-        clientPropsNameLabel.setClassName("props-label");
+        clientPropsNameLabel.setClassName("props-label-contrast");
         clientPropsEncrtyptionModeLabel = new H3("Режим: " + chatDao.getEncryptionMode());
         clientPropsEncrtyptionModeLabel.setClassName("props-label");
         clientPropsPaddingTypeLabel = new H3("Набивка: " + chatDao.getPaddingType());
@@ -149,12 +178,12 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         );
 
         matePropsHeader = new H3("Собеседник");
-        matePropsHeader.setClassName("props-header");
-        matePropsNameLabel = new H3(MATE_ABSENT_NAME_PLACEHOLDER);
+        matePropsHeader.setClassName("absent-header");
+        matePropsNameLabel = new H3(String.format(MATE_NAME_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
         matePropsNameLabel.setClassName("props-label");
-        matePropsEncrtyptionModeLabel = new H3(MATE_ABSENT_MODE_PLACEHOLDER);
-        matePropsEncrtyptionModeLabel.setClassName("props-label");
-        matePropsPaddingTypeLabel = new H3(MATE_ABSENT_PADDING_PLACEHOLDER);
+        matePropsEncryptionModeLabel = new H3(String.format(MATE_MODE_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
+        matePropsEncryptionModeLabel.setClassName("props-label");
+        matePropsPaddingTypeLabel = new H3(String.format(MATE_PADDING_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
         matePropsPaddingTypeLabel.setClassName("props-label");
 
         matePropsLayout = new VerticalLayout();
@@ -162,7 +191,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         matePropsLayout.add(
                 matePropsHeader,
                 matePropsNameLabel,
-                matePropsEncrtyptionModeLabel,
+                matePropsEncryptionModeLabel,
                 matePropsPaddingTypeLabel
         );
 
@@ -178,14 +207,14 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         loadingLabel = new H3("Инициализация чата...");
         loadingLabel.setClassName("loading-label");
 
-        loaadingSpinner = new Image("spinner.svg", "loading...");
-        loaadingSpinner.setClassName("loading-spinner");
+        loadingSpinner = new Image("spinner.svg", "loading...");
+        loadingSpinner.setClassName("loading-spinner");
 
         loadingPatch = new VerticalLayout();
         loadingPatch.setClassName("loading-patch");
         loadingPatch.add(
                 loadingLabel,
-                loaadingSpinner
+                loadingSpinner
         );
 
         loadingLayout = new VerticalLayout();
@@ -248,6 +277,17 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         log.info("Someone entered '{}' chat", chatName);
         this.chatName = chatName;
         this.statusHeader.setText(chatName);
+    }
+
+    @Override
+    public void onAttach(AttachEvent attachEvent) {
+        loadingLabel.setText("Ожидаем собеседника...");
+        eventRegistrations.add(chatService.attachListener(this::onMateJoiningEvent));
+    }
+
+    @Override
+    public void onDetach(DetachEvent detachEvent) {
+        eventRegistrations.forEach(Registration::remove);
     }
 
 }

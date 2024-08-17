@@ -26,7 +26,7 @@ public class HelloView extends VerticalLayout {
     private boolean isValidUsername(String username) {
         return username != null
                 && !username.trim().isEmpty()
-                && username.matches("[a-zA-Z0-9]+");
+                && username.matches("[a-zA-Z0-9-]+");
     }
 
     public HelloView() {

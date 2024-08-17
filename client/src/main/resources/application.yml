@@ -6,7 +6,7 @@ app-configs:
   chat-endpoint: /chat
   server:
     host: localhost
-    port: 8082
+    port: ${APP_PORT:8082}
     gateway-url: /hello
   file-upload:
     in-memory: true
@@ -29,3 +29,5 @@ server:
 vaadin:
   frontend:
     hotdeploy: true
+  url-mapping: /*
+  excludeUrls: "/swagger-ui/**, /v3/api-docs/**, ${springdoc.swagger-ui.path}, /client-chat/**"

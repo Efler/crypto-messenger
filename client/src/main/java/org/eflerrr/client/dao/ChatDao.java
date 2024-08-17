@@ -1,7 +1,7 @@
 package org.eflerrr.client.dao;
 
 import lombok.Data;
-import org.eflerrr.client.dto.KafkaInfo;
+import org.eflerrr.client.model.KafkaInfo;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;

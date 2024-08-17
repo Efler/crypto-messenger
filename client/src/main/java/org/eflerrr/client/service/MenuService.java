@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
-import org.eflerrr.client.dto.KafkaInfo;
-import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +55,25 @@ public class MenuService {
         chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
 
         generatePublicKey();
+    }
+
+    public void joinChat() {
+        var chatName = chatDao.getChatName();
+        var clientName = clientDao.getClientName();
+        var clientId = clientDao.getClientId();
+        var mode = chatDao.getEncryptionMode();
+        var padding = chatDao.getPaddingType();
+
+        log.info("Joining chat with name {}", chatName);
+        var serverResponse = serverClient.joinChat(clientId, clientName, chatName, mode, padding);
+        chatDao.setEncryptionAlgorithm(serverResponse.getEncryptionAlgorithm());
+        chatDao.setG(serverResponse.getDiffieHellmanParams().getG());
+        chatDao.setP(serverResponse.getDiffieHellmanParams().getP());
+        chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
+        chatDao.setMateName(serverResponse.getMateName());
+
+        generatePublicKey();
+        // TODO! CONTINUE JOINING LOGIC!
     }
 
     public void generateClientId() {

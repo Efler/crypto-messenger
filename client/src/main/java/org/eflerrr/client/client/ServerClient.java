@@ -1,11 +1,14 @@
 package org.eflerrr.client.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eflerrr.client.dto.ChatInfo;
+import org.eflerrr.client.configuration.ApplicationConfig;
+import org.eflerrr.client.model.ChatInfo;
 import org.eflerrr.client.dto.request.CreateChatRequest;
 import org.eflerrr.client.dto.response.CreateChatResponse;
-import org.eflerrr.client.configuration.ApplicationConfig;
+import org.eflerrr.client.dto.response.JoinChatResponse;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -42,7 +45,10 @@ public class ServerClient {
     }
 
     public CreateChatResponse createChat(
-            long clientId, String clientName, String chatName, EncryptionAlgorithm algorithm
+            long clientId,
+            String clientName,
+            String chatName,
+            EncryptionAlgorithm algorithm
     ) {
         log.info("Making a request to the server to create a chat: {}, {}", chatName, algorithm);
         return webClient.post()
@@ -65,6 +71,44 @@ public class ServerClient {
                 .block();
     }
 
-    // todo: join chat!
+    public JoinChatResponse joinChat(
+            long clientId,
+            String clientName,
+            String chatName,
+            EncryptionMode mode,
+            PaddingType padding
+    ) {
+        log.info("Making a request to the server to join a chat: {}", chatName);
+        return webClient.get()
+                .uri(config.chatEndpoint())
+                .header("Client-Id", String.valueOf(clientId))
+                .header("Client-Name", clientName)
+                .header("Client-Host", config.server().host())
+                .header("Client-Port", String.valueOf(config.server().port()))
+                .header("Chat-Name", chatName)
+                .header("Encryption-Mode", mode.name())
+                .header("Padding-Type", padding.name())
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals, r ->
+                        Mono.error(new IllegalArgumentException(String.format(
+                                "Чата с именем '%s' не существует!",
+                                chatName
+                        )))
+                )
+                .onStatus(HttpStatus.FORBIDDEN::equals, r ->
+                        Mono.error(new IllegalArgumentException(String.format(
+                                "Чат с именем '%s' уже занят другими пользователями!",
+                                chatName
+                        )))
+                )
+                .onStatus(HttpStatus.CONFLICT::equals, r ->
+                        Mono.error(new IllegalArgumentException(String.format(
+                                "Клиент с именем '%s' уже присоединился к чату '%s'!",
+                                clientName, chatName
+                        )))
+                )
+                .bodyToMono(JoinChatResponse.class)
+                .block();
+    }
 
 }

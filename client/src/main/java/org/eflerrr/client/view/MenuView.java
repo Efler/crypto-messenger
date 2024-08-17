@@ -23,9 +23,11 @@ import com.vaadin.flow.theme.lumo.Lumo;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
-import org.eflerrr.client.dto.ChatInfo;
+import org.eflerrr.client.model.ChatInfo;
+import org.eflerrr.client.model.event.ChatUpdateEvent;
 import org.eflerrr.client.scheduler.ChatListUpdateScheduler;
 import org.eflerrr.client.service.MenuService;
+import org.eflerrr.client.util.UIUtils;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
@@ -111,7 +113,13 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
                     errorNotification.open();
                 }
             } else {
-                // TODO! LOGIC WITH JOINING CHAT
+                try {
+                    menuService.joinChat();
+                    getUI().ifPresent(ui -> ui.navigate("chat/" + chatDao.getChatName()));
+                } catch (IllegalArgumentException e) {
+                    errorNotification.setText(e.getMessage());
+                    errorNotification.open();
+                }
             }
 
 
@@ -289,47 +297,44 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         scheduler.start();
     }
 
-    public void onChatListUpdate(ChatListUpdateScheduler.ChatUpdateEvent event) {
+    public void onChatListUpdate(ChatUpdateEvent chatUpdateEvent) {
         log.info("Updating chat list in UI");
 
-        if (getUI().isPresent()) {
-            var currUI = getUI().get();
-            currUI.getSession().lock();
-            currUI.access(() -> {
-                listLayout.removeAll();
-                if (event.getUpdatedChats().isEmpty()) {
+        UIUtils.executeWithLockUI(getUI(), chatUpdateEvent, (rawEvent) -> {
 
-                    var noChatsLabel = new Div("Нет доступных комнат :(");
-                    noChatsLabel.setClassName("no-chats-label");
-                    listLayout.add(noChatsLabel);
+            var chatList = ((ChatUpdateEvent) rawEvent).getUpdatedChats();
+            listLayout.removeAll();
+            if (chatList.isEmpty()) {
 
-                } else {
+                var noChatsLabel = new Div("Нет доступных комнат :(");
+                noChatsLabel.setClassName("no-chats-label");
+                listLayout.add(noChatsLabel);
 
-                    for (ChatInfo chatInfo : event.getUpdatedChats()) {
-                        Button chatButton = new Button(chatInfo.getChatName());
-                        chatButton.addClassName("list-chat-button");
-                        chatButton.addClickListener(e -> onJoinChatButtonClick(e.getSource().getText()));
+            } else {
 
-                        Button chatAlgorithm = new Button(chatInfo.getEncryptionAlgorithm());
-                        chatAlgorithm.setClassName("list-chat-algorithm");
+                for (ChatInfo chatInfo : chatList) {
+                    Button chatButton = new Button(chatInfo.getChatName());
+                    chatButton.addClassName("list-chat-button");
+                    chatButton.addClickListener(e -> onJoinChatButtonClick(e.getSource().getText()));
 
-                        var rowLayout = new HorizontalLayout();
-                        rowLayout.setClassName("list-chat-row-layout");
-                        rowLayout.setAlignItems(Alignment.CENTER);
-                        rowLayout.setSpacing(false);
-                        rowLayout.setPadding(false);
-                        rowLayout.setMargin(false);
-                        rowLayout.add(
-                                chatButton,
-                                chatAlgorithm
-                        );
-                        listLayout.add(rowLayout);
-                    }
+                    Button chatAlgorithm = new Button(chatInfo.getEncryptionAlgorithm().toString());
+                    chatAlgorithm.setClassName("list-chat-algorithm");
 
+                    var rowLayout = new HorizontalLayout();
+                    rowLayout.setClassName("list-chat-row-layout");
+                    rowLayout.setAlignItems(Alignment.CENTER);
+                    rowLayout.setSpacing(false);
+                    rowLayout.setPadding(false);
+                    rowLayout.setMargin(false);
+                    rowLayout.add(
+                            chatButton,
+                            chatAlgorithm
+                    );
+                    listLayout.add(rowLayout);
                 }
-            });
-            currUI.getSession().unlock();
-        }
+
+            }
+        });
     }
 
     @Override
