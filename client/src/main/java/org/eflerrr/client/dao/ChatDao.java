@@ -19,6 +19,7 @@ public class ChatDao {
     private EncryptionMode mateEncryptionMode;
     private PaddingType paddingType;
     private PaddingType matePaddingType;
+    private BigInteger matePublicKey;
     private BigInteger g;
     private BigInteger p;
     private KafkaInfo kafkaInfo;

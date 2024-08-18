@@ -42,6 +42,12 @@ public class ServerChatController {
             @Min(1)
             @RequestHeader(value = "Client-Port")
             int clientPort,
+            @NotNull
+            @RequestHeader(value = "Encryption-Mode")
+            EncryptionMode mode,
+            @NotNull
+            @RequestHeader(value = "Padding-Type")
+            PaddingType padding,
 
             @Valid
             @RequestBody
@@ -56,6 +62,8 @@ public class ServerChatController {
                             .name(clientName)
                             .host(clientHost)
                             .port(clientPort)
+                            .encryptionMode(mode)
+                            .paddingType(padding)
                             .publicKey(null)
                             .build());
             return ResponseEntity
@@ -101,8 +109,9 @@ public class ServerChatController {
                             .host(clientHost)
                             .port(clientPort)
                             .publicKey(null)
-                            .build(),
-                    mode, padding);
+                            .encryptionMode(mode)
+                            .paddingType(padding)
+                            .build());
             return ResponseEntity
                     .ok(chatServiceResponse);
 
@@ -134,18 +143,18 @@ public class ServerChatController {
             @RequestHeader(value = "Chat-Name")
             String chatName,
 
-            @Min(0)
+            @Min(1)
             @RequestBody
             BigInteger publicKey
     ) {
         try {
-            var exchangedPublicKey = chatService.exchangePublicKey(
+            var exchangeResponse = chatService.exchangePublicKey(
                     chatName,
                     clientId,
                     publicKey
             );
             return ResponseEntity
-                    .ok(exchangedPublicKey);
+                    .ok(exchangeResponse);
         } catch (IllegalArgumentException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)

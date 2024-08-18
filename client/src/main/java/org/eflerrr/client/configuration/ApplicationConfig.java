@@ -24,8 +24,10 @@ public record ApplicationConfig(
         String chatEndpoint,
         @Valid
         Server server,
-        FileUpload fileUpload
-
+        @Valid
+        FileUpload fileUpload,
+        @Valid
+        Encryption encryption
 ) {
 
     public record ChatList(
@@ -52,6 +54,16 @@ public record ApplicationConfig(
             @Min(1)
             @Max(10485760)  // 10 Mb
             int fileMaxSize
+    ) {
+    }
+
+    public record Encryption(
+            @Min(1)
+            @Max(1024)
+            int privateKeyBitLength,
+            @Min(1)
+            @Max(8)
+            int threadsCount
     ) {
     }
 

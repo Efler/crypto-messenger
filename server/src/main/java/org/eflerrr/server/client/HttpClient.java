@@ -32,10 +32,10 @@ public class HttpClient {
                 .block();
     }
 
-    public void sendPublicKey(String host, int port, BigInteger publicKey) {
+    public void sendPublicKey(String host, int port, BigInteger matePublicKey) {
         webClient.post()
                 .uri(String.format(PUBLIC_KEY_URL, host, port))
-                .bodyValue(publicKey)
+                .bodyValue(matePublicKey)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         Mono.error(new IllegalStateException("Client was not awaiting public key")))

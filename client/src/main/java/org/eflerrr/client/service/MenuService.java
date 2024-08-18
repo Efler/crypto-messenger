@@ -3,6 +3,7 @@ package org.eflerrr.client.service;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.client.ServerClient;
+import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,6 @@ import java.security.SecureRandom;
 @Slf4j
 public class MenuService {
 
-    private final static int PRIVATE_KEY_BIT_LENGTH = 1024;
     private final static SecureRandom RANDOM = new SecureRandom();
 
     private final ServerClient serverClient;
@@ -28,6 +28,7 @@ public class MenuService {
         clientDao.setPublicKey(
                 chatDao.getG().modPow(clientDao.getPrivateKey(), chatDao.getP())
         );
+        log.warn("Public key: {}", clientDao.getPublicKey());  // TODO!
     }
 
 
@@ -35,10 +36,12 @@ public class MenuService {
     public MenuService(
             ServerClient serverClient,
             ClientDao clientDao,
-            ChatDao chatDao) {
+            ChatDao chatDao,
+            ApplicationConfig config) {
         this.serverClient = serverClient;
         this.clientDao = clientDao;
-        this.clientDao.setPrivateKey(new BigInteger(PRIVATE_KEY_BIT_LENGTH, RANDOM));
+        this.clientDao.setPrivateKey(
+                new BigInteger(config.encryption().privateKeyBitLength(), RANDOM));
         this.chatDao = chatDao;
     }
 
@@ -47,9 +50,12 @@ public class MenuService {
         var clientName = clientDao.getClientName();
         var clientId = clientDao.getClientId();
         var algorithm = chatDao.getEncryptionAlgorithm();
+        var mode = chatDao.getEncryptionMode();
+        var padding = chatDao.getPaddingType();
 
         log.info("Creating chat with name {}", chatName);
-        var serverResponse = serverClient.createChat(clientId, clientName, chatName, algorithm);
+        var serverResponse = serverClient.createChat(
+                clientId, clientName, chatName, algorithm, mode, padding);
         chatDao.setG(serverResponse.getDiffieHellmanParams().getG());
         chatDao.setP(serverResponse.getDiffieHellmanParams().getP());
         chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
@@ -70,10 +76,14 @@ public class MenuService {
         chatDao.setG(serverResponse.getDiffieHellmanParams().getG());
         chatDao.setP(serverResponse.getDiffieHellmanParams().getP());
         chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
-        chatDao.setMateName(serverResponse.getMateName());
 
         generatePublicKey();
-        // TODO! CONTINUE JOINING LOGIC!
+
+        var exchangeResponse = serverClient.exchangePublicKey(clientId, chatName, clientDao.getPublicKey());
+        chatDao.setMateName(exchangeResponse.getMateName());
+        chatDao.setMateEncryptionMode(exchangeResponse.getMateMode());
+        chatDao.setMatePaddingType(exchangeResponse.getMatePadding());
+        chatDao.setMatePublicKey(exchangeResponse.getMatePublicKey());
     }
 
     public void generateClientId() {

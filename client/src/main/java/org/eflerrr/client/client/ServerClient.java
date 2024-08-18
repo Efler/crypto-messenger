@@ -2,6 +2,7 @@ package org.eflerrr.client.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.configuration.ApplicationConfig;
+import org.eflerrr.client.dto.response.ExchangePublicKeyResponse;
 import org.eflerrr.client.model.ChatInfo;
 import org.eflerrr.client.dto.request.CreateChatRequest;
 import org.eflerrr.client.dto.response.CreateChatResponse;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigInteger;
 import java.util.List;
 
 @Component
@@ -48,7 +50,9 @@ public class ServerClient {
             long clientId,
             String clientName,
             String chatName,
-            EncryptionAlgorithm algorithm
+            EncryptionAlgorithm algorithm,
+            EncryptionMode mode,
+            PaddingType padding
     ) {
         log.info("Making a request to the server to create a chat: {}, {}", chatName, algorithm);
         return webClient.post()
@@ -57,6 +61,8 @@ public class ServerClient {
                 .header("Client-Name", clientName)
                 .header("Client-Host", config.server().host())
                 .header("Client-Port", String.valueOf(config.server().port()))
+                .header("Encryption-Mode", mode.name())
+                .header("Padding-Type", padding.name())
                 .bodyValue(CreateChatRequest.builder()
                         .chatName(chatName)
                         .encryptionAlgorithm(algorithm)
@@ -108,6 +114,30 @@ public class ServerClient {
                         )))
                 )
                 .bodyToMono(JoinChatResponse.class)
+                .block();
+    }
+
+    public ExchangePublicKeyResponse exchangePublicKey(long clientId, String chatName, BigInteger publicKey) {
+        log.info("Making a request to the server to exchange public key (chat: {})", chatName);
+        return webClient.put()
+                .uri(config.chatEndpoint())
+                .header("Client-Id", String.valueOf(clientId))
+                .header("Chat-Name", chatName)
+                .bodyValue(publicKey)
+                .retrieve()
+                .onStatus(HttpStatus.FORBIDDEN::equals, r ->
+                        Mono.error(new IllegalArgumentException(String.format(
+                                "Чат с ID '%s' не находится в чате %s!",
+                                clientId, chatName
+                        )))
+                )
+                .onStatus(HttpStatus.NOT_FOUND::equals, r ->
+                        Mono.error(new IllegalArgumentException(String.format(
+                                "Чата с именем '%s' не существует!",
+                                chatName
+                        )))
+                )
+                .bodyToMono(ExchangePublicKeyResponse.class)
                 .block();
     }
 

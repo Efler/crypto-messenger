@@ -21,7 +21,5 @@ public class JoinChatResponse {
     private KafkaInfo kafkaInfo;
     @NotNull
     private EncryptionAlgorithm encryptionAlgorithm;
-    @NotBlank
-    private String mateName;
 
 }

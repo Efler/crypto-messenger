@@ -2,8 +2,10 @@ package org.eflerrr.client.view;
 
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
@@ -23,10 +25,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.client.model.entity.ChatMessage;
+import org.eflerrr.client.model.event.IncomingMessageEvent;
 import org.eflerrr.client.model.event.MateJoiningEvent;
+import org.eflerrr.client.model.event.ReadyToChatEvent;
+import org.eflerrr.client.model.event.ReceiveMatePublicKeyEvent;
 import org.eflerrr.client.model.uploadbuffer.UploadBuffer;
 import org.eflerrr.client.service.ChatService;
 import org.eflerrr.client.util.UIUtils;
+import org.eflerrr.encrypt.types.EncryptionMode;
+import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -34,7 +42,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Route("chat")
@@ -79,7 +89,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private final ClientDao clientDao;
     private final ApplicationConfig config;
     private final Set<Registration> eventRegistrations;
-    private String chatName;
 
 
     private void onFileUpload(SucceededEvent event) {
@@ -117,22 +126,55 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         fileButton.setEnabled(true);
     }
 
+    private void fillMateProps(String mateName, EncryptionMode mateMode, PaddingType matePadding) {
+        matePropsHeader.setClassName("props-header");
+        matePropsNameLabel.setClassName("props-label-contrast");
+        matePropsNameLabel.setText(
+                String.format(MATE_NAME_TEMPLATE, mateName));
+        matePropsEncryptionModeLabel.setText(
+                String.format(MATE_MODE_TEMPLATE, mateMode));
+        matePropsPaddingTypeLabel.setText(
+                String.format(MATE_PADDING_TEMPLATE, matePadding));
+    }
+
     private void onMateJoiningEvent(MateJoiningEvent mateJoiningEvent) {
         UIUtils.executeWithLockUI(getUI(), mateJoiningEvent, (rawEvent) -> {
 
             var event = (MateJoiningEvent) rawEvent;
-            var mateName = String.format(MATE_NAME_TEMPLATE, event.getMateName());
-            var mateMode = String.format(MATE_MODE_TEMPLATE, event.getMateMode());
-            var matePadding = String.format(MATE_PADDING_TEMPLATE, event.getMatePadding());
-
-            matePropsHeader.setClassName("props-header");
-            matePropsNameLabel.setClassName("props-label-contrast");
-            matePropsNameLabel.setText(mateName);
-            matePropsEncryptionModeLabel.setText(mateMode);
-            matePropsPaddingTypeLabel.setText(matePadding);
-
+            fillMateProps(event.getMateName(), event.getMateMode(), event.getMatePadding());
             loadingLabel.setText("Обмен публичными ключами...");
 
+        });
+    }
+
+    private void onReceiveMatePublicKeyEvent(ReceiveMatePublicKeyEvent receiveMatePublicKeyEvent) {
+        UIUtils.executeWithLockUI(getUI(), receiveMatePublicKeyEvent, (ignored) -> {
+            loadingLabel.setText("Генерация итогового ключа...");
+            chatService.generateFinalKey();
+        });
+    }
+
+    private void onReadyToChatEvent(ReadyToChatEvent readyToChatEvent) {
+        UIUtils.executeWithLockUI(getUI(), readyToChatEvent, (ignored) -> {
+            unlockInput();
+            loadingLayout.setVisible(false);
+            // TODO:
+//            loadingLabel.setText(
+//                    String.format("private - %s;\npublic - %s;\nmate - %s;\nfinal - %s",
+//                            clientDao.getPrivateKey(), clientDao.getPublicKey(),
+//                            chatDao.getMatePublicKey(), clientDao.getFinalKey()));
+        });
+    }
+
+    private void onIncomingMessageEvent(IncomingMessageEvent incomingMessageEvent) {
+        UIUtils.executeWithLockUI(getUI(), incomingMessageEvent, (rawEvent) -> {
+            var chatMessage = ((IncomingMessageEvent) rawEvent).getChatMessage();
+            if (chatMessage.getMessageType() == ChatMessage.MessageType.TEXT) {
+                var messageLabel = new Div(new String(chatMessage.getMessage(), StandardCharsets.UTF_8));
+                messageLabel.setClassName("props-header");
+                messagesLayout.add(messageLabel);
+            }
+            //TODO.   !!!!!
         });
     }
 
@@ -236,6 +278,20 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
         sendButton = new Button(VaadinIcon.ENTER_ARROW.create());
         sendButton.setClassName("send-button");
+        sendButton.addClickShortcut(Key.ENTER);
+        sendButton.addClickListener(ignored -> {
+            var message = inputTextField.getValue();
+            if (!message.isEmpty()) {
+                inputTextField.clear();
+                chatService.sendMessage(new ChatMessage(
+                        message.getBytes(StandardCharsets.UTF_8),
+                        false,
+                        ChatMessage.MessageType.TEXT,
+                        clientDao.getClientId(),
+                        Optional.empty()
+                ));
+            }
+        });
 
         fileButton = new Button(VaadinIcon.UPLOAD_ALT.create());
         fileButton.setClassName("file-button");
@@ -268,21 +324,37 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                 statusLayout,
                 chatLayout
         );
-
     }
 
     @Override
     public void setParameter(BeforeEvent beforeEvent, String chatName) {
         chatName = chatName.trim().replace(" ", "-");
         log.info("Someone entered '{}' chat", chatName);
-        this.chatName = chatName;
         this.statusHeader.setText(chatName);
     }
 
     @Override
     public void onAttach(AttachEvent attachEvent) {
-        loadingLabel.setText("Ожидаем собеседника...");
-        eventRegistrations.add(chatService.attachListener(this::onMateJoiningEvent));
+        eventRegistrations.add(chatService.attachListener(
+                this::onMateJoiningEvent, MateJoiningEvent.class));
+        eventRegistrations.add(chatService.attachListener(
+                this::onReceiveMatePublicKeyEvent, ReceiveMatePublicKeyEvent.class));
+        eventRegistrations.add(chatService.attachListener(
+                this::onReadyToChatEvent, ReadyToChatEvent.class));
+        eventRegistrations.add(chatService.attachListener(
+                this::onIncomingMessageEvent, IncomingMessageEvent.class));
+        if (clientDao.getIsCreator()) {
+            loadingLabel.setText("Ожидаем собеседника...");
+        } else {
+            // TODO:
+            System.out.println("РЕЖИМ: " + chatDao.getMateEncryptionMode());
+            fillMateProps(
+                    chatDao.getMateName(),
+                    chatDao.getMateEncryptionMode(),
+                    chatDao.getMatePaddingType());
+            loadingLabel.setText("Генерация итогового ключа...");
+            chatService.generateFinalKey();
+        }
     }
 
     @Override

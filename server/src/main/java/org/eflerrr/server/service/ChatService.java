@@ -14,6 +14,7 @@ import org.eflerrr.server.configuration.ApplicationConfig;
 import org.eflerrr.server.controller.dto.DiffieHellmanParams;
 import org.eflerrr.server.controller.dto.KafkaInfo;
 import org.eflerrr.server.controller.dto.response.CreateChatResponse;
+import org.eflerrr.server.controller.dto.response.ExchangePublicKeyResponse;
 import org.eflerrr.server.controller.dto.response.JoinChatResponse;
 import org.eflerrr.server.exchangekey.DiffieHellman;
 import org.eflerrr.server.service.dto.Chat;
@@ -88,8 +89,7 @@ public class ChatService {
                 .build();
     }
 
-    public JoinChatResponse joinChat(
-            String chatName, ClientInfo client, EncryptionMode mode, PaddingType padding) throws InvalidKeyException {
+    public JoinChatResponse joinChat(String chatName, ClientInfo client) throws InvalidKeyException {
         var chat = chats.get(chatName);
         if (chat == null) {
             throw new IllegalArgumentException(String.format(CHAT_NOT_EXIST_ERROR_MESSAGE, chatName));
@@ -101,11 +101,14 @@ public class ChatService {
             throw new IllegalCallerException(String.format("Client with id %d already in chat", client.getId()));
         }
 
-        ClientInfo creator = chat.getClients().get(chat.getCreatorId());;
         try {
-            chat.getClients().get(chat.getCreatorId());
+            var creator = chat.getClients().get(chat.getCreatorId());
             var creatorPublicKey = httpClient.getPublicKey(
-                    creator.getHost(), creator.getPort(), client.getName(), mode, padding);
+                    creator.getHost(),
+                    creator.getPort(),
+                    client.getName(),
+                    client.getEncryptionMode(),
+                    client.getPaddingType());
             creator.setPublicKey(creatorPublicKey);
         } catch (IllegalStateException e) {
             throw new InvalidKeyException((String.format(
@@ -125,26 +128,29 @@ public class ChatService {
                         .topic(chat.getKafkaTopic().name())
                         .build())
                 .encryptionAlgorithm(chat.getEncryptionAlgorithm())
-                .mateName(creator.getName())
                 .build();
     }
 
-    public BigInteger exchangePublicKey(String chatName, Long clientId, BigInteger publicKey) {
+    public ExchangePublicKeyResponse exchangePublicKey(String chatName, Long clientId, BigInteger publicKey) {
         var chat = chats.get(chatName);
         if (chat == null) {
             throw new IllegalArgumentException(String.format(CHAT_NOT_EXIST_ERROR_MESSAGE, chatName));
         }
         if (!chat.getClients().containsKey(clientId)) {
-            throw new IllegalCallerException(String.format("Client with id %d is not in chat", clientId));
+            throw new IllegalCallerException(String.format("Client with id %d is not in the chat", clientId));
         }
 
         var creator = chat.getClients().get(chat.getCreatorId());
-        var creatorPublicKey = creator.getPublicKey();
 
         chat.getClients().get(clientId).setPublicKey(publicKey);
         httpClient.sendPublicKey(creator.getHost(), creator.getPort(), publicKey);
 
-        return creatorPublicKey;
+        return ExchangePublicKeyResponse.builder()
+                .matePublicKey(creator.getPublicKey())
+                .mateName(creator.getName())
+                .mateMode(creator.getEncryptionMode())
+                .matePadding(creator.getPaddingType())
+                .build();
     }
 
     @SneakyThrows

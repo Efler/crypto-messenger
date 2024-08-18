@@ -11,6 +11,9 @@ app-configs:
   file-upload:
     in-memory: true
     file-max-size: 10485760  # 10 Mb
+  encryption:
+    private-key-bit-length: 1024
+    threads-count: 4
 
 spring:
   application:
@@ -18,6 +21,10 @@ spring:
   servlet:
     multipart:
       max-file-size: ${app-configs.file-upload.file-max-size}
+  spring:
+    json:
+      trusted:
+        packages: "*"
 
 springdoc:
   swagger-ui:

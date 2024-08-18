@@ -1,4 +1,4 @@
-package org.eflerrr.server.service.dto;
+package org.eflerrr.client.dto.response;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,20 +12,15 @@ import java.math.BigInteger;
 
 @Data
 @Builder
-public class ClientInfo {
+public class ExchangePublicKeyResponse {
 
-    @Min(0)
-    private Long id;
-    @NotBlank
-    private String name;
-    @NotBlank
-    private String host;
     @Min(1)
-    private int port;
-    @Min(1)
-    private BigInteger publicKey;
-
-    private EncryptionMode encryptionMode;
-    private PaddingType paddingType;
+    private BigInteger matePublicKey;
+    @NotBlank
+    private String mateName;
+    @NotNull
+    private EncryptionMode mateMode;
+    @NotNull
+    private PaddingType matePadding;
 
 }
