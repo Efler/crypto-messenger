@@ -1,12 +1,10 @@
 package org.eflerrr.client.controller;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.service.ChatService;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -22,19 +20,13 @@ public class ClientChatController {
 
     private final ChatService chatService;
 
-    @GetMapping("/public-key")
+    @PutMapping("/public-key")
     public ResponseEntity<Object> publicKey(
-            @NotBlank
-            @RequestHeader(value = "Mate-Name")
-            String mateName,
             @NotNull
-            @RequestHeader(value = "Encryption-Mode")
-            EncryptionMode mateMode,
-            @NotNull
-            @RequestHeader(value = "Padding-Type")
-            PaddingType matePadding
+            @RequestBody
+            ClientSettings mateSettings
     ) {
-        chatService.processMateJoining(mateName, mateMode, matePadding);
+        chatService.processMateJoining(mateSettings);
         try {
             return ResponseEntity
                     .ok(chatService.getClientPublicKey());

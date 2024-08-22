@@ -7,18 +7,15 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
 import org.eflerrr.server.client.HttpClient;
 import org.eflerrr.server.configuration.ApplicationConfig;
-import org.eflerrr.server.controller.dto.DiffieHellmanParams;
-import org.eflerrr.server.controller.dto.KafkaInfo;
-import org.eflerrr.server.controller.dto.response.CreateChatResponse;
-import org.eflerrr.server.controller.dto.response.ExchangePublicKeyResponse;
-import org.eflerrr.server.controller.dto.response.JoinChatResponse;
-import org.eflerrr.server.exchangekey.DiffieHellman;
-import org.eflerrr.server.service.dto.Chat;
-import org.eflerrr.server.service.dto.ClientInfo;
+import org.eflerrr.server.model.Chat;
+import org.eflerrr.server.model.ClientInfo;
+import org.eflerrr.server.model.DiffieHellmanParams;
+import org.eflerrr.server.model.KafkaInfo;
+import org.eflerrr.server.model.dto.response.CreateChatResponse;
+import org.eflerrr.server.model.dto.response.ExchangePublicKeyResponse;
+import org.eflerrr.server.model.dto.response.JoinChatResponse;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatService {
 
     private final Map<String, Chat> chats = new ConcurrentHashMap<>();
-    private final DiffieHellman diffieHellman;
+    private final DiffieHellmanService diffieHellmanService;
     private final HttpClient httpClient;
     private final KafkaAdmin kafkaAdmin;
     private final AdminClient kafkaTopicsDeleter;
@@ -62,7 +59,7 @@ public class ChatService {
             clients.put(creator.getId(), creator);
         }
 
-        var generatedParams = diffieHellman.generateParams(config.diffieHellman().bitLength());
+        var generatedParams = diffieHellmanService.generateParams(config.diffieHellman().bitLength());
         var g = generatedParams.getLeft();
         var p = generatedParams.getRight();
 
@@ -106,9 +103,7 @@ public class ChatService {
             var creatorPublicKey = httpClient.getPublicKey(
                     creator.getHost(),
                     creator.getPort(),
-                    client.getName(),
-                    client.getEncryptionMode(),
-                    client.getPaddingType());
+                    client.getSettings());
             creator.setPublicKey(creatorPublicKey);
         } catch (IllegalStateException e) {
             throw new InvalidKeyException((String.format(
@@ -127,7 +122,6 @@ public class ChatService {
                         .bootstrapServers(config.kafka().bootstrapServers())
                         .topic(chat.getKafkaTopic().name())
                         .build())
-                .encryptionAlgorithm(chat.getEncryptionAlgorithm())
                 .build();
     }
 
@@ -147,9 +141,7 @@ public class ChatService {
 
         return ExchangePublicKeyResponse.builder()
                 .matePublicKey(creator.getPublicKey())
-                .mateName(creator.getName())
-                .mateMode(creator.getEncryptionMode())
-                .matePadding(creator.getPaddingType())
+                .mateSettings(creator.getSettings())
                 .build();
     }
 
@@ -187,6 +179,12 @@ public class ChatService {
             );
         }
         return result;
+    }
+
+    public boolean isChatRegistered(String chatName) {
+        var isRegistered = chats.containsKey(chatName);
+        log.info("Processing isChatRegistered for chat '{}', {}", chatName, isRegistered ? "YES" : "NO");
+        return isRegistered;
     }
 
 

@@ -8,10 +8,9 @@ import java.math.BigInteger;
 @Component
 @Data
 public class ClientDao {
+
     private String clientName;
     private Long clientId;
-    private Boolean isCreator;
-    private BigInteger publicKey;
     private BigInteger privateKey;
-    private BigInteger finalKey;
+
 }

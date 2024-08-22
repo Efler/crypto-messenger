@@ -1,15 +1,15 @@
-package org.eflerrr.server.exchangekey;
+package org.eflerrr.server.service;
 
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.util.Random;
 
-@Component
+@Service
 @NoArgsConstructor
-public class DiffieHellman {
+public class DiffieHellmanService {
 
     private final int[] primitiveVals = new int[]{2, 3, 5, 7, 11, 13, 17};
     private final Random random = new Random();

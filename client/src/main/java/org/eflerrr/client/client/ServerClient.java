@@ -2,14 +2,14 @@ package org.eflerrr.client.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.configuration.ApplicationConfig;
-import org.eflerrr.client.dto.response.ExchangePublicKeyResponse;
-import org.eflerrr.client.model.ChatInfo;
 import org.eflerrr.client.dto.request.CreateChatRequest;
+import org.eflerrr.client.dto.request.JoinChatRequest;
 import org.eflerrr.client.dto.response.CreateChatResponse;
+import org.eflerrr.client.dto.response.ExchangePublicKeyResponse;
 import org.eflerrr.client.dto.response.JoinChatResponse;
+import org.eflerrr.client.model.ChatInfo;
+import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -18,6 +18,9 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.util.List;
+
+import static org.eflerrr.utils.Utils.bytesToBinaryString;
+import static org.eflerrr.utils.Utils.bytesToHexString;
 
 @Component
 @Slf4j
@@ -48,24 +51,19 @@ public class ServerClient {
 
     public CreateChatResponse createChat(
             long clientId,
-            String clientName,
             String chatName,
             EncryptionAlgorithm algorithm,
-            EncryptionMode mode,
-            PaddingType padding
+            ClientSettings clientSettings
     ) {
-        log.info("Making a request to the server to create a chat: {}, {}", chatName, algorithm);
         return webClient.post()
                 .uri(config.chatEndpoint())
                 .header("Client-Id", String.valueOf(clientId))
-                .header("Client-Name", clientName)
                 .header("Client-Host", config.server().host())
                 .header("Client-Port", String.valueOf(config.server().port()))
-                .header("Encryption-Mode", mode.name())
-                .header("Padding-Type", padding.name())
                 .bodyValue(CreateChatRequest.builder()
                         .chatName(chatName)
                         .encryptionAlgorithm(algorithm)
+                        .clientSettings(clientSettings)
                         .build())
                 .retrieve()
                 .onStatus(HttpStatus.CONFLICT::equals, r ->
@@ -79,21 +77,19 @@ public class ServerClient {
 
     public JoinChatResponse joinChat(
             long clientId,
-            String clientName,
             String chatName,
-            EncryptionMode mode,
-            PaddingType padding
+            ClientSettings clientSettings
     ) {
         log.info("Making a request to the server to join a chat: {}", chatName);
-        return webClient.get()
+        return webClient.patch()
                 .uri(config.chatEndpoint())
                 .header("Client-Id", String.valueOf(clientId))
-                .header("Client-Name", clientName)
                 .header("Client-Host", config.server().host())
                 .header("Client-Port", String.valueOf(config.server().port()))
-                .header("Chat-Name", chatName)
-                .header("Encryption-Mode", mode.name())
-                .header("Padding-Type", padding.name())
+                .bodyValue(JoinChatRequest.builder()
+                        .chatName(chatName)
+                        .clientSettings(clientSettings)
+                        .build())
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals, r ->
                         Mono.error(new IllegalArgumentException(String.format(
@@ -110,7 +106,7 @@ public class ServerClient {
                 .onStatus(HttpStatus.CONFLICT::equals, r ->
                         Mono.error(new IllegalArgumentException(String.format(
                                 "Клиент с именем '%s' уже присоединился к чату '%s'!",
-                                clientName, chatName
+                                clientSettings.getClientName(), chatName
                         )))
                 )
                 .bodyToMono(JoinChatResponse.class)
@@ -139,6 +135,17 @@ public class ServerClient {
                 )
                 .bodyToMono(ExchangePublicKeyResponse.class)
                 .block();
+    }
+
+    public boolean isChatRegistered(String chatName) {
+        log.info("Making a request to the server to check if chat is registered (chat: {})", chatName);
+        return Boolean.TRUE.equals(
+                webClient.get()
+                        .uri(config.chatEndpoint() + "/is-registered/{chat-name}", chatName)
+                        .retrieve()
+                        .bodyToMono(Boolean.class)
+                        .block()
+        );
     }
 
 }

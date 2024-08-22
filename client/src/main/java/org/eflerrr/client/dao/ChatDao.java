@@ -1,10 +1,9 @@
 package org.eflerrr.client.dao;
 
 import lombok.Data;
+import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.model.KafkaInfo;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -12,15 +11,16 @@ import java.math.BigInteger;
 @Component
 @Data
 public class ChatDao {
+
     private String chatName;
-    private String mateName;
+    private ClientSettings selfSettings;
+    private ClientSettings mateSettings;
     private EncryptionAlgorithm encryptionAlgorithm;
-    private EncryptionMode encryptionMode;
-    private EncryptionMode mateEncryptionMode;
-    private PaddingType paddingType;
-    private PaddingType matePaddingType;
+    private BigInteger selfPublicKey;
     private BigInteger matePublicKey;
+    private BigInteger finalKey;
     private BigInteger g;
     private BigInteger p;
     private KafkaInfo kafkaInfo;
+
 }

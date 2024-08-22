@@ -1,6 +1,7 @@
 package org.eflerrr.client.view;
 
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -24,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
 import org.eflerrr.client.model.ChatInfo;
+import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.model.event.ChatUpdateEvent;
 import org.eflerrr.client.scheduler.ChatListUpdateScheduler;
 import org.eflerrr.client.service.MenuService;
@@ -33,6 +35,11 @@ import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.eflerrr.utils.Utils.bytesToHexString;
+
 @Route("menu")
 @PageTitle("Menu")
 @CssImport("./styles/menu/menu-styles.css")
@@ -41,11 +48,13 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
 
     private final static String INVALID_INPUT_NOTIFICATION_TEXT = "Некорректные параметры для создания чата";
     private final static String INVALID_SETTINGS_NOTIFICATION_TEXT = "Некорректные настройки шифрования";
+    private final static String DUPLICATED_CHAT_NOTIFICATION_TEXT_TEMPLATE = "Чат с именем '%s' уже существует";
 
     private final MenuService menuService;
     private final ChatListUpdateScheduler scheduler;
     private final ClientDao clientDao;
     private final ChatDao chatDao;
+    private final Map<String, EncryptionAlgorithm> registeredChats;
 
     private final Notification errorNotification = new Notification(
             "Неизвестная ошибка, попробуйте позже!",
@@ -58,8 +67,14 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     private final VerticalLayout settingsLayout;
     private final ComboBox<EncryptionMode> settingsModeBox;
     private final ComboBox<PaddingType> settingsPaddingBox;
+    private final TextField ivTextField;
+    private final Button generateIVButton;
     private Registration registration;
 
+
+    private void onGenerateIVButtonClick(ClickEvent<Button> ignored) {
+        ivTextField.setValue(bytesToHexString(menuService.generateIV(), "-"));
+    }
 
     private void enableDarkenLayout() {
         this.add(darkenLayout);
@@ -71,15 +86,34 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         darkenLayout.getClassNames().remove("darken");
     }
 
+    private void showSettings() {
+        enableDarkenLayout();
+        this.add(settingsLayout);
+        settingsLayout.getClassNames().add("show-settings");
+        onGenerateIVButtonClick(null);
+    }
+
+    private void hideSettings() {
+        this.remove(settingsLayout);
+        settingsLayout.getClassNames().remove("show-settings");
+        disableDarkenLayout();
+    }
+
     private void onCreateChatButtonClick() {
         var chosenName = createNameField.getValue();
         var chosenAlgo = createBox.getValue();
         if (menuService.validateChatName(chosenName) && chosenAlgo != null) {
-            clientDao.setIsCreator(true);
+            if (!menuService.isChatRegistered(chosenName)) {
+                chatDao.getSelfSettings().setIsCreator(true);
+                chatDao.setChatName(chosenName);
+                chatDao.setEncryptionAlgorithm(chosenAlgo);
 
-            enableDarkenLayout();
-            this.add(settingsLayout);
-            settingsLayout.getClassNames().add("show-settings");
+                showSettings();
+            } else {
+                errorNotification.setText(String.format(
+                        DUPLICATED_CHAT_NOTIFICATION_TEXT_TEMPLATE, chosenName));
+                errorNotification.open();
+            }
         } else {
             errorNotification.setText(INVALID_INPUT_NOTIFICATION_TEXT);
             errorNotification.open();
@@ -87,24 +121,21 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     }
 
     private void onJoinChatButtonClick(String chosenName) {
-        clientDao.setIsCreator(false);
+        chatDao.getSelfSettings().setIsCreator(false);
         chatDao.setChatName(chosenName);
+        chatDao.setEncryptionAlgorithm(registeredChats.get(chosenName));
 
-        enableDarkenLayout();
-        this.add(settingsLayout);
-        settingsLayout.getClassNames().add("show-settings");
+        showSettings();
     }
 
     private void onSettingsConfirmClick() {
         var chosenMode = settingsModeBox.getValue();
         var chosenPadding = settingsPaddingBox.getValue();
         if (chosenMode != null && chosenPadding != null) {
-            chatDao.setEncryptionMode(chosenMode);
-            chatDao.setPaddingType(chosenPadding);
+            chatDao.getSelfSettings().setEncryptionMode(chosenMode);
+            chatDao.getSelfSettings().setPaddingType(chosenPadding);
 
-            if (clientDao.getIsCreator()) {
-                chatDao.setChatName(createNameField.getValue());
-                chatDao.setEncryptionAlgorithm(createBox.getValue());
+            if (chatDao.getSelfSettings().getIsCreator()) {
                 try {
                     menuService.createChat();
                     getUI().ifPresent(ui -> ui.navigate("chat/" + chatDao.getChatName()));
@@ -130,9 +161,12 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     }
 
     private void onSettingsCloseClick() {
-        this.remove(settingsLayout);
-        settingsLayout.getClassNames().remove("show-settings");
-        disableDarkenLayout();
+        chatDao.setChatName(null);
+        chatDao.setEncryptionAlgorithm(null);
+        chatDao.getSelfSettings().setIV(null);
+        chatDao.getSelfSettings().setIsCreator(false);
+
+        hideSettings();
     }
 
     @Override
@@ -159,6 +193,7 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         this.scheduler = scheduler;
         this.chatDao = chatDao;
         this.clientDao = clientDao;
+        this.registeredChats = new HashMap<>();
 
         this.darkenLayout = new Div();
         darkenLayout.setClassName("darken-layout");
@@ -170,7 +205,7 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         settingsLayout.setJustifyContentMode(JustifyContentMode.CENTER);
         settingsLayout.setAlignItems(Alignment.CENTER);
 
-        var settingsHeader = new H3("Настройте режим шифрования и тип набивки блоков");
+        var settingsHeader = new H3("Настройте режим шифрования, тип набивки блоков и вектор инициализации");
         settingsHeader.setClassName("settings-header");
         this.settingsModeBox = new ComboBox<>();
         settingsModeBox.setPlaceholder("Режим...");
@@ -192,6 +227,14 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
                 settingsModeBox,
                 settingsPaddingBox
         );
+        this.ivTextField = new TextField();
+        ivTextField.setClassName("settings-iv-field");
+        ivTextField.setReadOnly(true);
+        ivTextField.setValue("Генерируем IV...");
+        ivTextField.addThemeVariants(TextFieldVariant.LUMO_ALIGN_CENTER);
+        this.generateIVButton = new Button("Сгенерировать новый IV");
+        generateIVButton.setClassName("settings-generate-iv-button");
+        generateIVButton.addClickListener(this::onGenerateIVButtonClick);
         var settingsButton = new Button("Применить");
         settingsButton.addClassName("settings-confirm-button");
         settingsButton.addClickListener(e -> onSettingsConfirmClick());
@@ -201,6 +244,8 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
         settingsLayout.add(
                 settingsHeader,
                 settingsInputLayout,
+                ivTextField,
+                generateIVButton,
                 settingsButton,
                 closeButton
         );
@@ -304,6 +349,7 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
 
             var chatList = ((ChatUpdateEvent) rawEvent).getUpdatedChats();
             listLayout.removeAll();
+            registeredChats.clear();
             if (chatList.isEmpty()) {
 
                 var noChatsLabel = new Div("Нет доступных комнат :(");
@@ -331,6 +377,7 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
                             chatAlgorithm
                     );
                     listLayout.add(rowLayout);
+                    registeredChats.put(chatInfo.getChatName(), chatInfo.getEncryptionAlgorithm());
                 }
 
             }
@@ -340,6 +387,9 @@ public class MenuView extends VerticalLayout implements HasUrlParameter<String> 
     @Override
     public void setParameter(BeforeEvent event, String clientName) {
         clientDao.setClientName(clientName);
+        chatDao.setSelfSettings(new ClientSettings());
+        chatDao.getSelfSettings().setClientName(clientName);
+
         menuService.generateClientId();
     }
 

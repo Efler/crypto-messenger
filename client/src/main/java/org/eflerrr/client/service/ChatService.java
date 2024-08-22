@@ -16,12 +16,12 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.model.entity.ChatMessage;
 import org.eflerrr.client.model.event.IncomingMessageEvent;
 import org.eflerrr.client.model.event.MateJoiningEvent;
 import org.eflerrr.client.model.event.ReadyToChatEvent;
 import org.eflerrr.client.model.event.ReceiveMatePublicKeyEvent;
-import org.eflerrr.client.util.BytesSerializer;
 import org.eflerrr.encrypt.manager.EncryptorManager;
 import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
@@ -46,12 +46,6 @@ public class ChatService {
     private final ClientDao clientDao;
     private final ComponentEventBus eventBus = new ComponentEventBus(new Div());
 
-    private final byte[] IV = new byte[]{   // TODO: MAKE FROM UI!
-            (byte) 0x04, (byte) 0x01, (byte) 0x02, (byte) 0x1C,
-            (byte) 0xF4, (byte) 0x65, (byte) 0x83, (byte) 0x07,
-            (byte) 0xAA, (byte) 0x09, (byte) 0x1A, (byte) 0x0B,
-            (byte) 0x00, (byte) 0xDD, (byte) 0x8E, (byte) 0x0F
-    };
     private EncryptorManager clientEncryptorManager;
     private EncryptorManager mateEncryptorManager;
     private KafkaProducer<String, ChatMessage> kafkaProducer;
@@ -62,21 +56,40 @@ public class ChatService {
         return eventBus.addListener(eventType, listener);
     }
 
-    public BigInteger getClientPublicKey() {
-        if (clientDao.getPublicKey() == null) {
-            throw new IllegalStateException("Client has no public key!");
-        }
-        return clientDao.getPublicKey();
+    private void generateFinalKey() {
+        var p = chatDao.getP();
+        var privateKey = clientDao.getPrivateKey();
+        var matePublicKey = chatDao.getMatePublicKey();
+
+        chatDao.setFinalKey(
+                matePublicKey.modPow(privateKey, p)
+        );
     }
 
-    public void processMateJoining(
-            String mateName, EncryptionMode mateMode, PaddingType matePadding) {
-        chatDao.setMateName(mateName);
-        chatDao.setMateEncryptionMode(mateMode);
-        chatDao.setMatePaddingType(matePadding);
+    private byte[] resizeFinalKey(int size) {
+        var resized = new byte[size];
+        var finalKeyBytes = chatDao.getFinalKey().toByteArray();
+        for (int i = 0; i < size; i++) {
+            resized[i] = finalKeyBytes[i % finalKeyBytes.length];
+        }
+        return resized;
+    }
+
+    public BigInteger getClientPublicKey() {
+        var key = chatDao.getSelfPublicKey();
+        if (key == null) {
+            throw new IllegalStateException("Client has no public key!");
+        }
+        return key;
+    }
+
+    public void processMateJoining(ClientSettings mateSettings) {
+        chatDao.setMateSettings(mateSettings);
 
         eventBus.fireEvent(new MateJoiningEvent(
-                mateName, mateMode, matePadding
+                mateSettings.getClientName(),
+                mateSettings.getEncryptionMode(),
+                mateSettings.getPaddingType()
         ));
     }
 
@@ -85,37 +98,25 @@ public class ChatService {
         eventBus.fireEvent(new ReceiveMatePublicKeyEvent());
     }
 
-    public void generateFinalKey() {
-        var p = chatDao.getP();
-        var privateKey = clientDao.getPrivateKey();
-        var matePublicKey = chatDao.getMatePublicKey();
+    public void setupEnvironment() {
+        generateFinalKey();
+        var resizedFinalKey = resizeFinalKey(chatDao.getEncryptionAlgorithm().getKeyLength());
 
-        clientDao.setFinalKey(
-                matePublicKey.modPow(privateKey, p)
-        );
-        // TODO!
-        var tmp = new byte[16];
-        var finalKeyArr = clientDao.getFinalKey().toByteArray();
-        for (int i = 0; i < 16; i++) {
-            tmp[i] = finalKeyArr[i % finalKeyArr.length];
-        }
-        log.warn("tmp = {}", tmp);
-
+        var selfSettings = chatDao.getSelfSettings();
         clientEncryptorManager = new EncryptorManager(
-//                clientDao.getFinalKey().toByteArray(),
-                tmp, // TODO!
+                resizedFinalKey,
                 chatDao.getEncryptionAlgorithm(),
-                chatDao.getEncryptionMode(),
-                chatDao.getPaddingType(),
-                IV
+                selfSettings.getEncryptionMode(),
+                selfSettings.getPaddingType(),
+                selfSettings.getIV()
         );
+        var mateSettings = chatDao.getMateSettings();
         mateEncryptorManager = new EncryptorManager(
-//                clientDao.getFinalKey().toByteArray(),
-                tmp, // TODO!
+                resizedFinalKey,
                 chatDao.getEncryptionAlgorithm(),
-                chatDao.getMateEncryptionMode(),
-                chatDao.getMatePaddingType(),
-                IV
+                mateSettings.getEncryptionMode(),
+                mateSettings.getPaddingType(),
+                mateSettings.getIV()
         );
 
         kafkaProducer = new KafkaProducer<>(Map.of(

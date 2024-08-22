@@ -1,4 +1,4 @@
-package org.eflerrr.server.controller.dto.response;
+package org.eflerrr.server.model.dto.response;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

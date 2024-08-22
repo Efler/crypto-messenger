@@ -1,4 +1,4 @@
-package org.eflerrr.server.service.dto;
+package org.eflerrr.server.model;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

@@ -154,7 +154,7 @@
 .settings-layout {
     position: fixed;
     z-index: 4;
-    height: 40%;
+    height: 60%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -187,8 +187,40 @@
     font-weight: bold;
     --vaadin-button-font-size: 25px;
 }
+.settings-iv-field {
+    width: 310px;
+    margin-top: 10px;
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    color: var(--primary-color);
+    --vaadin-input-field-readonly-border: 1px dashed var(--primary-color);
+}
+.settings-iv-field > input {
+    color: var(--primary-color);
+}
+.settings-generate-iv-button {
+    width: 310px;
+    margin-top: 10px;
+    color: var(--primary-color);
+    background-color: var(--secondary-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    border: 1px solid var(--primary-color);
+    --vaadin-button-height: 40px;
+    --vaadin-button-font-size: 17px;
+}
+.settings-generate-iv-button:hover {
+    color: var(--secondary-color);
+    border-color: var(--hover-color);
+    background-color: var(--hover-color);
+}
+.settings-generate-iv-button:active {
+    color: var(--secondary-color);
+    border-color: var(--active-color);
+    background-color: var(--active-color);
+}
 .settings-confirm-button {
-    margin-top: 20px;
+    margin-top: 40px;
     --vaadin-button-height: 40px;
     width: 310px;
     color: var(--secondary-color);

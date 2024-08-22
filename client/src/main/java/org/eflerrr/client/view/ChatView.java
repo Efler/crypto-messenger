@@ -86,7 +86,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
     private final ChatService chatService;
     private final ChatDao chatDao;
-    private final ClientDao clientDao;
     private final ApplicationConfig config;
     private final Set<Registration> eventRegistrations;
 
@@ -150,7 +149,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private void onReceiveMatePublicKeyEvent(ReceiveMatePublicKeyEvent receiveMatePublicKeyEvent) {
         UIUtils.executeWithLockUI(getUI(), receiveMatePublicKeyEvent, (ignored) -> {
             loadingLabel.setText("Генерация итогового ключа...");
-            chatService.generateFinalKey();
+            chatService.setupEnvironment();
         });
     }
 
@@ -158,11 +157,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         UIUtils.executeWithLockUI(getUI(), readyToChatEvent, (ignored) -> {
             unlockInput();
             loadingLayout.setVisible(false);
-            // TODO:
-//            loadingLabel.setText(
-//                    String.format("private - %s;\npublic - %s;\nmate - %s;\nfinal - %s",
-//                            clientDao.getPrivateKey(), clientDao.getPublicKey(),
-//                            chatDao.getMatePublicKey(), clientDao.getFinalKey()));
         });
     }
 
@@ -173,6 +167,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                 var messageLabel = new Div(new String(chatMessage.getMessage(), StandardCharsets.UTF_8));
                 messageLabel.setClassName("props-header");
                 messagesLayout.add(messageLabel);
+                messagesLayout.getElement().executeJs("this.scrollTop = this.scrollHeight;");
             }
             //TODO.   !!!!!
         });
@@ -189,7 +184,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             UploadBuffer uploadBuffer) {
         this.chatService = chatService;
         this.chatDao = chatDao;
-        this.clientDao = clientDao;
         this.config = config;
         this.eventRegistrations = new HashSet<>();
         this.uploadBuffer = uploadBuffer;
@@ -205,9 +199,9 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         clientPropsHeader.setClassName("props-header");
         clientPropsNameLabel = new H3("Имя: " + clientDao.getClientName());
         clientPropsNameLabel.setClassName("props-label-contrast");
-        clientPropsEncrtyptionModeLabel = new H3("Режим: " + chatDao.getEncryptionMode());
+        clientPropsEncrtyptionModeLabel = new H3("Режим: " + chatDao.getSelfSettings().getEncryptionMode());
         clientPropsEncrtyptionModeLabel.setClassName("props-label");
-        clientPropsPaddingTypeLabel = new H3("Набивка: " + chatDao.getPaddingType());
+        clientPropsPaddingTypeLabel = new H3("Набивка: " + chatDao.getSelfSettings().getPaddingType());
         clientPropsPaddingTypeLabel.setClassName("props-label");
 
         clientPropsLayout = new VerticalLayout();
@@ -283,13 +277,14 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             var message = inputTextField.getValue();
             if (!message.isEmpty()) {
                 inputTextField.clear();
-                chatService.sendMessage(new ChatMessage(
-                        message.getBytes(StandardCharsets.UTF_8),
-                        false,
-                        ChatMessage.MessageType.TEXT,
-                        clientDao.getClientId(),
-                        Optional.empty()
-                ));
+                chatService.sendMessage(
+                        new ChatMessage(
+                                message.getBytes(StandardCharsets.UTF_8),
+                                false,
+                                ChatMessage.MessageType.TEXT,
+                                clientDao.getClientId(),
+                                Optional.empty()
+                        ));
             }
         });
 
@@ -343,17 +338,15 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                 this::onReadyToChatEvent, ReadyToChatEvent.class));
         eventRegistrations.add(chatService.attachListener(
                 this::onIncomingMessageEvent, IncomingMessageEvent.class));
-        if (clientDao.getIsCreator()) {
+        if (chatDao.getSelfSettings().getIsCreator()) {
             loadingLabel.setText("Ожидаем собеседника...");
         } else {
-            // TODO:
-            System.out.println("РЕЖИМ: " + chatDao.getMateEncryptionMode());
             fillMateProps(
-                    chatDao.getMateName(),
-                    chatDao.getMateEncryptionMode(),
-                    chatDao.getMatePaddingType());
+                    chatDao.getMateSettings().getClientName(),
+                    chatDao.getMateSettings().getEncryptionMode(),
+                    chatDao.getMateSettings().getPaddingType());
             loadingLabel.setText("Генерация итогового ключа...");
-            chatService.generateFinalKey();
+            chatService.setupEnvironment();
         }
     }
 

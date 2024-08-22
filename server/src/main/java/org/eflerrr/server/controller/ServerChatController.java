@@ -1,16 +1,16 @@
 package org.eflerrr.server.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
-import org.eflerrr.server.controller.dto.request.CreateChatRequest;
-import org.eflerrr.server.controller.dto.response.ListChatsResponse;
+import org.eflerrr.server.model.ClientInfo;
+import org.eflerrr.server.model.dto.request.CreateChatRequest;
+import org.eflerrr.server.model.dto.request.JoinChatRequest;
+import org.eflerrr.server.model.dto.response.ListChatsResponse;
 import org.eflerrr.server.service.ChatService;
-import org.eflerrr.server.service.dto.ClientInfo;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.util.List;
+
+import static org.eflerrr.utils.Utils.bytesToBinaryString;
+import static org.eflerrr.utils.Utils.bytesToHexString;
 
 @RestController
 @RequestMapping("/chat")
@@ -34,20 +37,12 @@ public class ServerChatController {
             @RequestHeader(value = "Client-Id")
             Long clientId,
             @NotBlank
-            @RequestHeader(value = "Client-Name")
-            String clientName,
-            @NotBlank
             @RequestHeader(value = "Client-Host")
             String clientHost,
             @Min(1)
+            @Max(65535)
             @RequestHeader(value = "Client-Port")
             int clientPort,
-            @NotNull
-            @RequestHeader(value = "Encryption-Mode")
-            EncryptionMode mode,
-            @NotNull
-            @RequestHeader(value = "Padding-Type")
-            PaddingType padding,
 
             @Valid
             @RequestBody
@@ -58,12 +53,10 @@ public class ServerChatController {
                     createChatRequest.getChatName(),
                     createChatRequest.getEncryptionAlgorithm(),
                     ClientInfo.builder()
+                            .settings(createChatRequest.getClientSettings())
                             .id(clientId)
-                            .name(clientName)
                             .host(clientHost)
                             .port(clientPort)
-                            .encryptionMode(mode)
-                            .paddingType(padding)
                             .publicKey(null)
                             .build());
             return ResponseEntity
@@ -76,41 +69,32 @@ public class ServerChatController {
         }
     }
 
-    @GetMapping
+    @PatchMapping
     public ResponseEntity<Object> joinChat(
             @Min(0)
             @RequestHeader(value = "Client-Id")
             Long clientId,
             @NotBlank
-            @RequestHeader(value = "Client-Name")
-            String clientName,
-            @NotBlank
             @RequestHeader(value = "Client-Host")
             String clientHost,
             @Min(1)
+            @Max(65535)
             @RequestHeader(value = "Client-Port")
             int clientPort,
-            @NotBlank
-            @RequestHeader(value = "Chat-Name")
-            String chatName,
+
             @NotNull
-            @RequestHeader(value = "Encryption-Mode")
-            EncryptionMode mode,
-            @NotNull
-            @RequestHeader(value = "Padding-Type")
-            PaddingType padding
+            @RequestBody
+            JoinChatRequest joinChatRequest
     ) {
         try {
             var chatServiceResponse = chatService.joinChat(
-                    chatName,
+                    joinChatRequest.getChatName(),
                     ClientInfo.builder()
+                            .settings(joinChatRequest.getClientSettings())
                             .id(clientId)
-                            .name(clientName)
                             .host(clientHost)
                             .port(clientPort)
                             .publicKey(null)
-                            .encryptionMode(mode)
-                            .paddingType(padding)
                             .build());
             return ResponseEntity
                     .ok(chatServiceResponse);
@@ -205,8 +189,17 @@ public class ServerChatController {
                 .ok(responseList);
     }
 
+    @GetMapping("/is-registered/{chat-name}")
+    public ResponseEntity<Boolean> isChatRegistered(
+            @NotBlank
+            @PathVariable("chat-name")
+            String chatName
+    ) {
+        return ResponseEntity
+                .ok(chatService.isChatRegistered(chatName));
+    }
 
-    @PostMapping("/checker")
+    @PostMapping("/checker")        // TODO: for debug only, remove in production
     public void checker() {     // TODO: for debug only, remove in production
         chatService.checker();
     }

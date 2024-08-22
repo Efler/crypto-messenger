@@ -6,6 +6,7 @@ import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,10 +26,9 @@ public class MenuService {
 
     private void generatePublicKey() {
         log.info("Generating public key");
-        clientDao.setPublicKey(
+        chatDao.setSelfPublicKey(
                 chatDao.getG().modPow(clientDao.getPrivateKey(), chatDao.getP())
         );
-        log.warn("Public key: {}", clientDao.getPublicKey());  // TODO!
     }
 
 
@@ -46,16 +46,15 @@ public class MenuService {
     }
 
     public void createChat() {
-        var chatName = chatDao.getChatName();
-        var clientName = clientDao.getClientName();
         var clientId = clientDao.getClientId();
+        var chatName = chatDao.getChatName();
         var algorithm = chatDao.getEncryptionAlgorithm();
-        var mode = chatDao.getEncryptionMode();
-        var padding = chatDao.getPaddingType();
+        var selfSettings = chatDao.getSelfSettings();
 
         log.info("Creating chat with name {}", chatName);
         var serverResponse = serverClient.createChat(
-                clientId, clientName, chatName, algorithm, mode, padding);
+                clientId, chatName, algorithm, selfSettings
+        );
         chatDao.setG(serverResponse.getDiffieHellmanParams().getG());
         chatDao.setP(serverResponse.getDiffieHellmanParams().getP());
         chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
@@ -64,26 +63,21 @@ public class MenuService {
     }
 
     public void joinChat() {
-        var chatName = chatDao.getChatName();
-        var clientName = clientDao.getClientName();
         var clientId = clientDao.getClientId();
-        var mode = chatDao.getEncryptionMode();
-        var padding = chatDao.getPaddingType();
+        var chatName = chatDao.getChatName();
+        var selfSettings = chatDao.getSelfSettings();
 
         log.info("Joining chat with name {}", chatName);
-        var serverResponse = serverClient.joinChat(clientId, clientName, chatName, mode, padding);
-        chatDao.setEncryptionAlgorithm(serverResponse.getEncryptionAlgorithm());
+        var serverResponse = serverClient.joinChat(clientId, chatName, selfSettings);
         chatDao.setG(serverResponse.getDiffieHellmanParams().getG());
         chatDao.setP(serverResponse.getDiffieHellmanParams().getP());
         chatDao.setKafkaInfo(serverResponse.getKafkaInfo());
 
         generatePublicKey();
 
-        var exchangeResponse = serverClient.exchangePublicKey(clientId, chatName, clientDao.getPublicKey());
-        chatDao.setMateName(exchangeResponse.getMateName());
-        chatDao.setMateEncryptionMode(exchangeResponse.getMateMode());
-        chatDao.setMatePaddingType(exchangeResponse.getMatePadding());
+        var exchangeResponse = serverClient.exchangePublicKey(clientId, chatName, chatDao.getSelfPublicKey());
         chatDao.setMatePublicKey(exchangeResponse.getMatePublicKey());
+        chatDao.setMateSettings(exchangeResponse.getMateSettings());
     }
 
     public void generateClientId() {
@@ -99,6 +93,16 @@ public class MenuService {
         return chatName != null
                 && !chatName.trim().isEmpty()
                 && chatName.matches("[a-zA-Z0-9-]+");
+    }
+
+    public byte[] generateIV() {
+        var generated = Utils.generateIV(chatDao.getEncryptionAlgorithm().getBlockLength() / 8);
+        chatDao.getSelfSettings().setIV(generated);
+        return generated;
+    }
+
+    public boolean isChatRegistered(String chatName) {
+        return serverClient.isChatRegistered(chatName);
     }
 
 }

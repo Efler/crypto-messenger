@@ -44,14 +44,12 @@ public class ChatListUpdateScheduler {
         return eventBus.addListener(ChatUpdateEvent.class, listener);
     }
 
-    public ChatListUpdateScheduler pause() {
+    public void pause() {
         isRunning = false;
-        return this;
     }
 
-    public ChatListUpdateScheduler start() {
+    public void start() {
         isRunning = true;
-        return this;
     }
 
     public ChatListUpdateScheduler clearPreviousList() {

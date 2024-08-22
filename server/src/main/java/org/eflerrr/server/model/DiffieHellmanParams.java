@@ -1,4 +1,4 @@
-package org.eflerrr.server.controller.dto;
+package org.eflerrr.server.model;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;

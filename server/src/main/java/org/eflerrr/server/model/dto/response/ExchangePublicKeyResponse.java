@@ -1,10 +1,10 @@
-package org.eflerrr.client.dto.response;
+package org.eflerrr.server.model.dto.response;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import org.eflerrr.client.model.ClientSettings;
+import org.eflerrr.server.model.ClientSettings;
 
 import java.math.BigInteger;
 
@@ -14,7 +14,7 @@ public class ExchangePublicKeyResponse {
 
     @Min(1)
     private BigInteger matePublicKey;
-    @NotBlank
+    @NotNull
     private ClientSettings mateSettings;
 
 }

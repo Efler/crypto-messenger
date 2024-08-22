@@ -3,12 +3,14 @@ package org.eflerrr.server.client;
 import lombok.RequiredArgsConstructor;
 import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
+import org.eflerrr.server.model.ClientSettings;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -19,12 +21,10 @@ public class HttpClient {
     private final WebClient webClient = WebClient.create();
 
     public BigInteger getPublicKey(
-            String host, int port, String mateName, EncryptionMode mateMode, PaddingType matePadding) {
-        return webClient.get()
+            String host, int port, ClientSettings mateSettings) {
+        return webClient.put()
                 .uri(String.format(PUBLIC_KEY_URL, host, port))
-                .header("Mate-Name", mateName)
-                .header("Encryption-Mode", mateMode.name())
-                .header("Padding-Type", matePadding.name())
+                .bodyValue(mateSettings)
                 .retrieve()
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         Mono.error(new IllegalStateException("Client does not have public key")))
