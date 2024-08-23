@@ -2,7 +2,6 @@ package org.eflerrr;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.encrypt.manager.EncryptorManager;
-import org.eflerrr.encrypt.mode.EncryptModes;
 import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
 
@@ -41,12 +40,11 @@ public class Main {
         try {
             log.info("initial file: {}", inputFile);
             log.info("encrypting file...");
-            manager.encryptFileAsync(
+            manager.encryptFile(
                     Paths.get("cipher", "src", "main", "resources", inputFile)
                             .toAbsolutePath().toString(),
                     Paths.get("cipher", "src", "main", "resources", encryptedFile)
-                            .toAbsolutePath().toString(),
-                    7);
+                            .toAbsolutePath().toString());
             log.info("encrypted: {}", encryptedFile);
         } catch (IOException e) {
             log.error("EncryptFileAsync Error! Message: {}", e.getMessage());
@@ -54,12 +52,11 @@ public class Main {
 
         try {
             log.info("decrypting file...");
-            manager.decryptFileAsync(
+            manager.decryptFile(
                     Paths.get("cipher", "src", "main", "resources", encryptedFile)
                             .toAbsolutePath().toString(),
                     Paths.get("cipher", "src", "main", "resources", decryptedFile)
-                            .toAbsolutePath().toString(),
-                    7);
+                            .toAbsolutePath().toString());
             log.info("decrypted: {}", decryptedFile);
         } catch (IOException e) {
             log.error("DecryptFileAsync Error! Message : {}", e.getMessage());

@@ -16,7 +16,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.eflerrr.encrypt.types.EncryptionAlgorithm.*;
@@ -62,9 +61,9 @@ class RC5EncryptorTest {
                 })
                 .flatMap(algorithm -> Stream.of(EncryptionMode.values())
                         .flatMap(mode -> Stream.of(PaddingType.values())
-                                .flatMap(type -> IntStream.range(1, 9)
-                                        .mapToObj(threads -> Arguments.of(
-                                                algorithm, mode, type, threads)))));
+                                .flatMap(type -> Stream.of(Arguments.of(
+                                        algorithm, mode, type
+                                )))));
     }
 
     private static Stream<Arguments> WordLengthTest_32_provideFileTestData() {
@@ -73,9 +72,9 @@ class RC5EncryptorTest {
                 })
                 .flatMap(algorithm -> Stream.of(EncryptionMode.values())
                         .flatMap(mode -> Stream.of(PaddingType.values())
-                                .flatMap(type -> IntStream.range(1, 9)
-                                        .mapToObj(threads -> Arguments.of(
-                                                algorithm, mode, type, threads)))));
+                                .flatMap(type -> Stream.of(Arguments.of(
+                                        algorithm, mode, type
+                                )))));
     }
 
     private static Stream<Arguments> WordLengthTest_64_provideFileTestData() {
@@ -84,9 +83,9 @@ class RC5EncryptorTest {
                 })
                 .flatMap(algorithm -> Stream.of(EncryptionMode.values())
                         .flatMap(mode -> Stream.of(PaddingType.values())
-                                .flatMap(type -> IntStream.range(1, 9)
-                                        .mapToObj(threads -> Arguments.of(
-                                                algorithm, mode, type, threads)))));
+                                .flatMap(type -> Stream.of(Arguments.of(
+                                        algorithm, mode, type
+                                )))));
     }
 
 
@@ -109,8 +108,7 @@ class RC5EncryptorTest {
     public void WordLengthTest_16(
             EncryptionAlgorithm algorithm,
             EncryptionMode mode,
-            PaddingType type,
-            int threads
+            PaddingType type
     ) throws IOException {
 
         var KEY = generateIV(getKeySize(algorithm));
@@ -123,14 +121,13 @@ class RC5EncryptorTest {
         log.info("Mode: {}", mode);
         log.info("Padding: {}", type);
         log.debug("Generated IV: {}", bytesToHexString(IV, "-"));
-        log.info("Threads: {}", threads);
 
         try {
 
             log.info("Initial file: {}", INITIAL_PATH);
-            manager.encryptFileAsync(INITIAL_PATH, ENCRYPTED_PATH, threads);
+            manager.encryptFile(INITIAL_PATH, ENCRYPTED_PATH);
             log.info("Encrypted file: {}", ENCRYPTED_PATH);
-            manager.decryptFileAsync(ENCRYPTED_PATH, DECRYPTED_PATH, threads);
+            manager.decryptFile(ENCRYPTED_PATH, DECRYPTED_PATH);
             log.info("Decrypted file: {}", DECRYPTED_PATH);
 
             assertEquals(
@@ -151,8 +148,7 @@ class RC5EncryptorTest {
     public void WordLengthTest_32(
             EncryptionAlgorithm algorithm,
             EncryptionMode mode,
-            PaddingType type,
-            int threads
+            PaddingType type
     ) throws IOException {
 
         var KEY = generateIV(getKeySize(algorithm));
@@ -165,14 +161,13 @@ class RC5EncryptorTest {
         log.info("Mode: {}", mode);
         log.info("Padding: {}", type);
         log.debug("Generated IV: {}", bytesToHexString(IV, "-"));
-        log.info("Threads: {}", threads);
 
         try {
 
             log.info("Initial file: {}", INITIAL_PATH);
-            manager.encryptFileAsync(INITIAL_PATH, ENCRYPTED_PATH, threads);
+            manager.encryptFile(INITIAL_PATH, ENCRYPTED_PATH);
             log.info("Encrypted file: {}", ENCRYPTED_PATH);
-            manager.decryptFileAsync(ENCRYPTED_PATH, DECRYPTED_PATH, threads);
+            manager.decryptFile(ENCRYPTED_PATH, DECRYPTED_PATH);
             log.info("Decrypted file: {}", DECRYPTED_PATH);
 
             assertEquals(
@@ -193,8 +188,7 @@ class RC5EncryptorTest {
     public void WordLengthTest_64(
             EncryptionAlgorithm algorithm,
             EncryptionMode mode,
-            PaddingType type,
-            int threads
+            PaddingType type
     ) throws IOException {
 
         var KEY = generateIV(getKeySize(algorithm));
@@ -207,14 +201,13 @@ class RC5EncryptorTest {
         log.info("Mode: {}", mode);
         log.info("Padding: {}", type);
         log.debug("Generated IV: {}", bytesToHexString(IV, "-"));
-        log.info("Threads: {}", threads);
 
         try {
 
             log.info("Initial file: {}", INITIAL_PATH);
-            manager.encryptFileAsync(INITIAL_PATH, ENCRYPTED_PATH, threads);
+            manager.encryptFile(INITIAL_PATH, ENCRYPTED_PATH);
             log.info("Encrypted file: {}", ENCRYPTED_PATH);
-            manager.decryptFileAsync(ENCRYPTED_PATH, DECRYPTED_PATH, threads);
+            manager.decryptFile(ENCRYPTED_PATH, DECRYPTED_PATH);
             log.info("Decrypted file: {}", DECRYPTED_PATH);
 
             assertEquals(
