@@ -13,7 +13,9 @@ app-configs:
     file-max-size: 10485760  # 10 Mb
   encryption:
     private-key-bit-length: 1024
-    threads-count: 4
+  kafka:
+    max-request-size: 10485761  # 10 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
+    fetch-max-bytes: 10485761  # 10 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
 
 spring:
   application:

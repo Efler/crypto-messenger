@@ -23,8 +23,6 @@ import org.eflerrr.client.model.event.MateJoiningEvent;
 import org.eflerrr.client.model.event.ReadyToChatEvent;
 import org.eflerrr.client.model.event.ReceiveMatePublicKeyEvent;
 import org.eflerrr.encrypt.manager.EncryptorManager;
-import org.eflerrr.encrypt.types.EncryptionMode;
-import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.stereotype.Service;
@@ -41,9 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class ChatService {
 
-    private final ApplicationConfig config;
     private final ChatDao chatDao;
     private final ClientDao clientDao;
+    private final ApplicationConfig config;
     private final ComponentEventBus eventBus = new ComponentEventBus(new Div());
 
     private EncryptorManager clientEncryptorManager;
@@ -122,7 +120,8 @@ public class ChatService {
         kafkaProducer = new KafkaProducer<>(Map.of(
                 "bootstrap.servers", chatDao.getKafkaInfo().getBootstrapServers(),
                 "client.id", clientDao.getClientName(),
-                "acks", "0"),
+                "acks", "0",
+                "max.request.size", String.valueOf(config.kafka().maxRequestSize())),
                 new StringSerializer(), new JsonSerializer<>());
 
         var deserializer = new JsonDeserializer<>(ChatMessage.class);
@@ -134,7 +133,8 @@ public class ChatService {
                 "bootstrap.servers", chatDao.getKafkaInfo().getBootstrapServers(),
                 "client.id", clientDao.getClientName(),
                 "group.id", clientDao.getClientId().toString(),
-                "auto.offset.reset", "latest"),
+                "auto.offset.reset", "latest",
+                "fetch.max.bytes", String.valueOf(config.kafka().fetchMaxBytes())),
                 new StringDeserializer(), deserializer);
         startConsuming();
 
@@ -143,8 +143,7 @@ public class ChatService {
 
     public void sendMessage(ChatMessage chatMessage) {
         var messageBytes = chatMessage.getMessage();
-        var encryptedMessage = clientEncryptorManager.encryptAsync(
-                messageBytes, config.encryption().threadsCount());
+        var encryptedMessage = clientEncryptorManager.encrypt(messageBytes);
         chatMessage.setMessage(encryptedMessage);
         chatMessage.setEncrypted(true);
         kafkaProducer.send(
@@ -154,11 +153,17 @@ public class ChatService {
     public void showMessage(ChatMessage chatMessage) {
         var encryptedMessage = chatMessage.getMessage();
         var decryptedMessage = chatMessage.getClientId() == clientDao.getClientId()
-                ? clientEncryptorManager.decryptAsync(encryptedMessage, config.encryption().threadsCount())
-                : mateEncryptorManager.decryptAsync(encryptedMessage, config.encryption().threadsCount());
+                ? clientEncryptorManager.decrypt(encryptedMessage)
+                : mateEncryptorManager.decrypt(encryptedMessage);
         chatMessage.setMessage(decryptedMessage);
         chatMessage.setEncrypted(false);
         eventBus.fireEvent(new IncomingMessageEvent(chatMessage));
+    }
+
+    public ChatMessage.MessageType resolveMessageType(String fileMIMEType) {
+        return fileMIMEType.startsWith("image/")
+                ? ChatMessage.MessageType.IMAGE
+                : ChatMessage.MessageType.TEXT;
     }
 
     private void startConsuming() {

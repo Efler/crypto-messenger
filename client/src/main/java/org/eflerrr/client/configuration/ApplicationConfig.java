@@ -27,7 +27,9 @@ public record ApplicationConfig(
         @Valid
         FileUpload fileUpload,
         @Valid
-        Encryption encryption
+        Encryption encryption,
+        @Valid
+        Kafka kafka
 ) {
 
     public record ChatList(
@@ -52,7 +54,7 @@ public record ApplicationConfig(
     public record FileUpload(
             boolean inMemory,
             @Min(1)
-            @Max(10485760)  // 10 Mb
+            @Max(10485760)  //  10 Mb
             int fileMaxSize
     ) {
     }
@@ -60,10 +62,17 @@ public record ApplicationConfig(
     public record Encryption(
             @Min(1)
             @Max(1024)
-            int privateKeyBitLength,
+            int privateKeyBitLength
+    ) {
+    }
+
+    public record Kafka(
             @Min(1)
-            @Max(8)
-            int threadsCount
+            @Max(10485761)  //  10 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
+            int maxRequestSize,
+            @Min(1)
+            @Max(10485761)  //  10 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
+            int fetchMaxBytes
     ) {
     }
 

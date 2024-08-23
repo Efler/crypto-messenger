@@ -30,6 +30,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 18px;
 }
 .absent-header {
     color: var(--hover-color);
@@ -43,6 +44,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 20px;
 }
 
 .props-label {
@@ -53,6 +55,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 18px;
 }
 .props-label-contrast {
     color: var(--primary-color);
@@ -62,16 +65,36 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 20px;
+}
+
+.exit-button {
+    color: var(--primary-color);
+    background-color: var(--medium-color);
+    font-family: var(--app-font), cursive;
+    font-weight: bold;
+    --vaadin-button-height: 50px;
+    --vaadin-button-font-size: 18px;
+}
+.exit-button:hover {
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+}
+.exit-button:active {
+    background-color: var(--active-color);
+    color: var(--secondary-color);
 }
 
 .status-layout {
+    display: flex;
     flex: 1;
     max-width: 33%;
     padding: 30px;
-    gap: 30px;
+    /*gap: 20px;*/
     box-sizing: border-box;
     background-color: var(--dark-color);
     border-radius: 10px;
+    justify-content: space-between;
     align-items: stretch;
 }
 
@@ -86,6 +109,7 @@
 
 .messages-layout {
     flex: 9;
+    padding: 50px;
     max-height: 90%;
     box-sizing: border-box;
     background-color: var(--dark-color);
@@ -93,6 +117,48 @@
     align-items: center;
     position: relative;
     overflow-y: auto;
+}
+
+.text-message-self {
+    max-width: 40%;
+    padding: 15px;
+    color: var(--secondary-color);
+    background-color: var(--primary-color);
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.text-message-mate {
+    max-width: 45%;
+    padding: 15px;
+    color: var(--secondary-color);
+    background-color: var(--hover-color);
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.image-message-self {
+    max-width: 400px;
+    height: auto;
+    border: 3px solid var(--primary-color);
+    border-radius: 10px;
+}
+
+.image-message-mate {
+    max-width: 400px;
+    height: auto;
+    border: 5px solid var(--hover-color);
+    border-radius: 10px;
 }
 
 .loading-layout {
@@ -169,6 +235,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 22px;
 }
 
 .input-text-field {

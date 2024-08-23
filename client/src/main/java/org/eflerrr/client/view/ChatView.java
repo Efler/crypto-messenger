@@ -1,6 +1,7 @@
 package org.eflerrr.client.view;
 
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
@@ -19,6 +20,7 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.Lumo;
 import lombok.extern.slf4j.Slf4j;
@@ -38,10 +40,10 @@ import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Optional;
@@ -58,6 +60,16 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private static final String MATE_PADDING_TEMPLATE = "Набивка: %s";
     private static final String MATE_ABSENT_PLACEHOLDER = "ожидаем...";
 
+    private static final String SCROLL_JS_SCRIPT =
+            "requestAnimationFrame(() => { this.scrollTop = this.scrollHeight; });";
+    private static final String SCROLL_UI_CALLBACK_TEMPLATE =
+            "const img = document.createElement('img');"
+                    + "img.src = '%s';"
+                    + "img.onload = function() {"
+                    + "  const container = document.querySelector('.messages-layout');"
+                    + "  container.scrollTop = container.scrollHeight;"
+                    + "};";
+
     private final H2 statusHeader;
     private final H2 encryptionAlgorithmLabel;
     private final H3 clientPropsHeader;
@@ -70,6 +82,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private final H3 matePropsEncryptionModeLabel;
     private final H3 matePropsPaddingTypeLabel;
     private final VerticalLayout matePropsLayout;
+    private final Button exitButton;
     private final VerticalLayout statusLayout;
     private final VerticalLayout chatLayout;
     private final VerticalLayout loadingLayout;
@@ -86,30 +99,51 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
     private final ChatService chatService;
     private final ChatDao chatDao;
+    private final ClientDao clientDao;
     private final ApplicationConfig config;
     private final Set<Registration> eventRegistrations;
 
 
+    private void onSendButtonClick(ClickEvent<Button> ignored) {
+        var message = inputTextField.getValue();
+        if (!message.isEmpty()) {
+            inputTextField.clear();
+            chatService.sendMessage(
+                    new ChatMessage(
+                            message.getBytes(StandardCharsets.UTF_8),
+                            false,
+                            ChatMessage.MessageType.TEXT,
+                            clientDao.getClientId(),
+                            Optional.empty()
+                    ));
+        }
+    }
+
+    private void onExitButtonClick(ClickEvent<Button> ignored) {
+        // TODO!
+    }
+
     private void onFileUpload(SucceededEvent event) {
         String fileName = event.getFileName();
+        InputStream fileInputStream = uploadBuffer.getInputStream(fileName);
         File file = null;
 
-        try (var reader = new BufferedReader(new InputStreamReader(
-                uploadBuffer.getInputStream(fileName)))
-        ) {
-            while (reader.ready()) {
-                System.out.println(reader.readLine());  // TODO!
-            }
+        try {
             if (!config.fileUpload().inMemory()) {
                 file = uploadBuffer.getFileData(fileName).getFile();
             }
-//            String filePath = file.getAbsolutePath();
-//            System.out.printf("File saved to: %s%n", filePath);  // TODO!
+            var messageType = chatService.resolveMessageType(event.getMIMEType());
+            chatService.sendMessage(
+                    new ChatMessage(
+                            fileInputStream.readAllBytes(),
+                            false,
+                            messageType,
+                            clientDao.getClientId(),
+                            Optional.of(fileName)
+                    ));
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());     //TODO!
-            ex.printStackTrace();
+            log.warn(ex.getLocalizedMessage());
         }
-
         if (file != null) {
             System.out.println(file.delete());
         }
@@ -162,14 +196,45 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
     private void onIncomingMessageEvent(IncomingMessageEvent incomingMessageEvent) {
         UIUtils.executeWithLockUI(getUI(), incomingMessageEvent, (rawEvent) -> {
+
             var chatMessage = ((IncomingMessageEvent) rawEvent).getChatMessage();
-            if (chatMessage.getMessageType() == ChatMessage.MessageType.TEXT) {
-                var messageLabel = new Div(new String(chatMessage.getMessage(), StandardCharsets.UTF_8));
-                messageLabel.setClassName("props-header");
-                messagesLayout.add(messageLabel);
-                messagesLayout.getElement().executeJs("this.scrollTop = this.scrollHeight;");
+            var scrollJsScript = SCROLL_JS_SCRIPT;
+            switch (chatMessage.getMessageType()) {
+
+                case TEXT:
+                    var messageLabel = new Div(new String(chatMessage.getMessage(), StandardCharsets.UTF_8));
+                    if (chatMessage.getClientId() == clientDao.getClientId()) {
+                        messageLabel.setClassName("text-message-self");
+                        messageLabel.getStyle().set("margin-left", "auto");
+                    } else {
+                        messageLabel.setClassName("text-message-mate");
+                        messageLabel.getStyle().set("margin-right", "auto");
+                    }
+                    messagesLayout.add(messageLabel);
+                    break;
+
+                case IMAGE:
+                    var imageResource = new StreamResource(
+                            "image", () -> new ByteArrayInputStream(chatMessage.getMessage()));
+                    var image = new Image(imageResource, "image");
+                    if (chatMessage.getClientId() == clientDao.getClientId()) {
+                        image.setClassName("image-message-self");
+                        image.getStyle().set("margin-left", "auto");
+                    } else {
+                        image.setClassName("image-message-mate");
+                        image.getStyle().set("margin-right", "auto");
+                    }
+                    messagesLayout.add(image);
+                    scrollJsScript = String.format(SCROLL_UI_CALLBACK_TEMPLATE, image.getSrc());
+                    break;
+
+                case FILE:
+                    // TODO!
+                    break;
             }
-            //TODO.   !!!!!
+            messagesLayout.getElement().executeJs(scrollJsScript);
+            //TODO   !!!!!
+
         });
     }
 
@@ -184,6 +249,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             UploadBuffer uploadBuffer) {
         this.chatService = chatService;
         this.chatDao = chatDao;
+        this.clientDao = clientDao;
         this.config = config;
         this.eventRegistrations = new HashSet<>();
         this.uploadBuffer = uploadBuffer;
@@ -231,13 +297,18 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                 matePropsPaddingTypeLabel
         );
 
+        exitButton = new Button("Покинуть чат");
+        exitButton.setClassName("exit-button");
+        exitButton.addClickListener(this::onExitButtonClick);
+
         statusLayout = new VerticalLayout();
         statusLayout.setClassName("status-layout");
         statusLayout.add(
                 statusHeader,
                 encryptionAlgorithmLabel,
                 clientPropsLayout,
-                matePropsLayout
+                matePropsLayout,
+                exitButton
         );
 
         loadingLabel = new H3("Инициализация чата...");
@@ -273,20 +344,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         sendButton = new Button(VaadinIcon.ENTER_ARROW.create());
         sendButton.setClassName("send-button");
         sendButton.addClickShortcut(Key.ENTER);
-        sendButton.addClickListener(ignored -> {
-            var message = inputTextField.getValue();
-            if (!message.isEmpty()) {
-                inputTextField.clear();
-                chatService.sendMessage(
-                        new ChatMessage(
-                                message.getBytes(StandardCharsets.UTF_8),
-                                false,
-                                ChatMessage.MessageType.TEXT,
-                                clientDao.getClientId(),
-                                Optional.empty()
-                        ));
-            }
-        });
+        sendButton.addClickListener(this::onSendButtonClick);
 
         fileButton = new Button(VaadinIcon.UPLOAD_ALT.create());
         fileButton.setClassName("file-button");
