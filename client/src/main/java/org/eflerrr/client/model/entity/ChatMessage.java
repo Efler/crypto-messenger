@@ -2,7 +2,9 @@ package org.eflerrr.client.model.entity;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Optional;
@@ -30,6 +32,8 @@ public class ChatMessage {
     private long clientId;
     @NotNull
     private Optional<String> filename;
+    @NotNull
+    private Optional<String> mimeType;
 
 
 }

@@ -54,7 +54,7 @@ public record ApplicationConfig(
     public record FileUpload(
             boolean inMemory,
             @Min(1)
-            @Max(10485760)  //  10 Mb
+            @Max(15728640)  //  15 Mb
             int fileMaxSize
     ) {
     }
@@ -68,10 +68,10 @@ public record ApplicationConfig(
 
     public record Kafka(
             @Min(1)
-            @Max(10485761)  //  10 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
+            @Max(15728641)  //  15 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
             int maxRequestSize,
             @Min(1)
-            @Max(10485761)  //  10 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
+            @Max(15728641)  //  15 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
             int fetchMaxBytes
     ) {
     }

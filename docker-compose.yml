@@ -28,8 +28,8 @@ services:
       - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://broker-1:9092,EXTERNAL://localhost:9093
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
-      - KAFKA_MESSAGE_MAX_BYTES=10485761          #  max message size 10 Mb  +  1 Mb for message metadata
-      - KAFKA_REPLICA_FETCH_MAX_BYTES=10485761    #  max message size 10 Mb  +  1 Mb for message metadata
+      - KAFKA_MESSAGE_MAX_BYTES=15728641          #  max message size 15 Mb  +  1 Mb for message metadata
+      - KAFKA_REPLICA_FETCH_MAX_BYTES=15728641    #  max message size 15 Mb  +  1 Mb for message metadata
     depends_on:
       - zookeeper
     networks:
@@ -49,8 +49,8 @@ services:
       - KAFKA_CFG_LISTENERS=CLIENT://:9094,EXTERNAL://:9095
       - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://broker-2:9094,EXTERNAL://localhost:9095
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
-      - KAFKA_MESSAGE_MAX_BYTES=10485761          #  max message size 10 Mb  +  1 Mb for message metadata
-      - KAFKA_REPLICA_FETCH_MAX_BYTES=10485761    #  max message size 10 Mb  +  1 Mb for message metadata
+      - KAFKA_MESSAGE_MAX_BYTES=15728641          #  max message size 15 Mb  +  1 Mb for message metadata
+      - KAFKA_REPLICA_FETCH_MAX_BYTES=15728641    #  max message size 15 Mb  +  1 Mb for message metadata
     depends_on:
       - zookeeper
     networks:

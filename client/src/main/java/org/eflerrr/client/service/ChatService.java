@@ -163,7 +163,7 @@ public class ChatService {
     public ChatMessage.MessageType resolveMessageType(String fileMIMEType) {
         return fileMIMEType.startsWith("image/")
                 ? ChatMessage.MessageType.IMAGE
-                : ChatMessage.MessageType.TEXT;
+                : ChatMessage.MessageType.FILE;
     }
 
     private void startConsuming() {

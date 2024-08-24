@@ -39,6 +39,7 @@ import org.eflerrr.encrypt.types.EncryptionMode;
 import org.eflerrr.encrypt.types.PaddingType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.vaadin.olli.FileDownloadWrapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -114,6 +115,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                             false,
                             ChatMessage.MessageType.TEXT,
                             clientDao.getClientId(),
+                            Optional.empty(),
                             Optional.empty()
                     ));
         }
@@ -139,7 +141,8 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                             false,
                             messageType,
                             clientDao.getClientId(),
-                            Optional.of(fileName)
+                            Optional.of(fileName),
+                            Optional.of(event.getMIMEType())
                     ));
         } catch (IOException ex) {
             log.warn(ex.getLocalizedMessage());
@@ -157,6 +160,42 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private void unlockInput() {
         inputPanelLayout.setEnabled(true);
         fileButton.setEnabled(true);
+    }
+
+    private String resolveFilename(ChatMessage message) {
+        var maybeMIMEType = message.getMimeType();
+        return message.getFilename().orElse("blank." +
+                (maybeMIMEType.map(s -> s.substring(s.indexOf('/')))
+                        .orElse(""))
+        );
+    }
+
+    private Button buildFileMessageButton(String fileName, String mimeType, boolean isSelf) {
+        var fileNameLabel = new H3(fileName);
+        fileNameLabel.setClassName("file-message-inner-filename-label");
+        var typeLabel = new H3(mimeType);
+        typeLabel.setClassName("file-message-inner-mime-type-label");
+
+        var verticalLayout = new VerticalLayout();
+        verticalLayout.setClassName("file-message-inner-vertical");
+        verticalLayout.add(
+                fileNameLabel,
+                typeLabel
+        );
+
+        var iconLayout = new VerticalLayout(VaadinIcon.FILE_TEXT.create());
+        iconLayout.setClassName("file-message-inner-icon");
+
+        var horizontalLayout = new HorizontalLayout();
+        horizontalLayout.setClassName("file-message-inner-horizontal");
+        horizontalLayout.add(
+                iconLayout,
+                verticalLayout
+        );
+
+        var button = new Button(horizontalLayout);
+        button.setClassName(isSelf ? "file-message-self" : "file-message-mate");
+        return button;
     }
 
     private void fillMateProps(String mateName, EncryptionMode mateMode, PaddingType matePadding) {
@@ -199,11 +238,12 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
             var chatMessage = ((IncomingMessageEvent) rawEvent).getChatMessage();
             var scrollJsScript = SCROLL_JS_SCRIPT;
+            var isSelf = chatMessage.getClientId() == clientDao.getClientId();
             switch (chatMessage.getMessageType()) {
 
                 case TEXT:
                     var messageLabel = new Div(new String(chatMessage.getMessage(), StandardCharsets.UTF_8));
-                    if (chatMessage.getClientId() == clientDao.getClientId()) {
+                    if (isSelf) {
                         messageLabel.setClassName("text-message-self");
                         messageLabel.getStyle().set("margin-left", "auto");
                     } else {
@@ -217,7 +257,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                     var imageResource = new StreamResource(
                             "image", () -> new ByteArrayInputStream(chatMessage.getMessage()));
                     var image = new Image(imageResource, "image");
-                    if (chatMessage.getClientId() == clientDao.getClientId()) {
+                    if (isSelf) {
                         image.setClassName("image-message-self");
                         image.getStyle().set("margin-left", "auto");
                     } else {
@@ -229,11 +269,20 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                     break;
 
                 case FILE:
-                    // TODO!
+                    var fileName = this.resolveFilename(chatMessage);
+                    var fileDataResource = new StreamResource(
+                            fileName, () -> new ByteArrayInputStream(chatMessage.getMessage()));
+                    var fileMessageButton = this.buildFileMessageButton(
+                            fileName, chatMessage.getMimeType().orElse("<unknown type>"), isSelf);
+                    FileDownloadWrapper fileMessageWrapper = new FileDownloadWrapper(fileDataResource);
+                    fileMessageWrapper.wrapComponent(fileMessageButton);
+                    fileMessageWrapper.getStyle().set(
+                            isSelf ? "margin-left" : "margin-right", "auto");
+                    messagesLayout.add(fileMessageWrapper);
                     break;
+
             }
             messagesLayout.getElement().executeJs(scrollJsScript);
-            //TODO   !!!!!
 
         });
     }
@@ -406,6 +455,22 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             loadingLabel.setText("Генерация итогового ключа...");
             chatService.setupEnvironment();
         }
+
+
+        //TODO!!!!!!!!!!!!!!!!!!!! STYLING FILE MESSAGE! REMOVE AFTER!
+
+//        UIUtils.executeWithLockUI(getUI(), new IncomingMessageEvent(null), (rawEvent) -> {
+//
+//            var fileMessageButton = buildFileMessageButton("system_design.txt", "application/txt", true);
+//            FileDownloadWrapper fileMessageWrapper = new FileDownloadWrapper(new StreamResource(
+//                    "a.txt", () -> new ByteArrayInputStream("So happy text! :)".getBytes())));
+//            fileMessageWrapper.wrapComponent(fileMessageButton);
+//            fileMessageWrapper.getStyle().set("margin-left", "auto");
+//            messagesLayout.add(fileMessageWrapper);
+//            loadingLayout.setVisible(false);
+//
+//        });
+
     }
 
     @Override
