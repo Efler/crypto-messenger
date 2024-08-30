@@ -122,7 +122,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     }
 
     private void onExitButtonClick(ClickEvent<Button> ignored) {
-        // TODO!
+        // TODO! LOGIC WHEN EXITING CHAT!
     }
 
     private void onFileUpload(SucceededEvent event) {
@@ -381,9 +381,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 
         messagesLayout = new VerticalLayout();
         messagesLayout.setClassName("messages-layout");
-        messagesLayout.add(
-                loadingLayout
-        );
 
         inputTextField = new TextField();
         inputTextField.addClassName("input-text-field");
@@ -419,6 +416,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         chatLayout.setClassName("chat-layout");
         chatLayout.add(
                 messagesLayout,
+                loadingLayout,
                 inputPanelLayout
         );
 
@@ -467,6 +465,14 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 //            fileMessageWrapper.wrapComponent(fileMessageButton);
 //            fileMessageWrapper.getStyle().set("margin-left", "auto");
 //            messagesLayout.add(fileMessageWrapper);
+//
+//            for (int i = 0; i < 10; i++) {
+//                Div div = new Div("hi" + i);
+//                div.setClassName("text-message-self");
+//                div.getStyle().set("margin-left", "auto");
+//                messagesLayout.add(div);
+//            }
+//
 //            loadingLayout.setVisible(false);
 //
 //        });
