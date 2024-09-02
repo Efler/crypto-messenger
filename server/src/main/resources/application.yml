@@ -2,7 +2,7 @@ app-configs:
   kafka:
     bootstrap-servers: localhost:9093
     topics-replication-factor: 2
-    topics-postfix: -room
+    topics-postfix: -chat
   diffie-hellman:
     bit-length: 100
 

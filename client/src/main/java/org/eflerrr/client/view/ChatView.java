@@ -27,7 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
-import org.eflerrr.client.model.entity.ChatMessage;
+import org.eflerrr.client.model.ChatMessage;
+import org.eflerrr.client.model.MessageType;
 import org.eflerrr.client.model.event.*;
 import org.eflerrr.client.model.uploadbuffer.UploadBuffer;
 import org.eflerrr.client.service.ChatService;
@@ -111,7 +112,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                     new ChatMessage(
                             message.getBytes(StandardCharsets.UTF_8),
                             false,
-                            ChatMessage.MessageType.TEXT,
+                            MessageType.TEXT,
                             clientDao.getClientId(),
                             Optional.empty(),
                             Optional.empty()

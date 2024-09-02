@@ -4,7 +4,7 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.html.Div;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.eflerrr.client.model.entity.ChatMessage;
+import org.eflerrr.client.model.ChatMessage;
 
 @Value
 @EqualsAndHashCode(callSuper = false)

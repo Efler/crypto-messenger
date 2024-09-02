@@ -16,10 +16,15 @@ app-configs:
   kafka:
     max-request-size: 15728641  # 15 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
     fetch-max-bytes: 15728641  # 15 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
+  database:
+    messages:
+      save-encrypted: true
 
 spring:
   application:
     name: client
+  liquibase:
+    enabled: false
   servlet:
     multipart:
       max-file-size: ${app-configs.file-upload.file-max-size}
@@ -27,6 +32,20 @@ spring:
     json:
       trusted:
         packages: "*"
+  datasource:
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/crypto_messenger
+    username: ${DB_USERNAME:eflerrr}
+    password: ${DB_PASSWORD:heyheyhey}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
 
 springdoc:
   swagger-ui:

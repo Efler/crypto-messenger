@@ -29,7 +29,9 @@ public record ApplicationConfig(
         @Valid
         Encryption encryption,
         @Valid
-        Kafka kafka
+        Kafka kafka,
+        @Valid
+        Database database
 ) {
 
     public record ChatList(
@@ -74,6 +76,17 @@ public record ApplicationConfig(
             @Max(15728641)  //  15 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
             int fetchMaxBytes
     ) {
+    }
+
+    public record Database(
+            Messages messages
+    ) {
+
+        public record Messages(
+                boolean saveEncrypted
+        ) {
+        }
+
     }
 
 }

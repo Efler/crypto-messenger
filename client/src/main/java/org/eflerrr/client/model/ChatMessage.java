@@ -1,4 +1,4 @@
-package org.eflerrr.client.model.entity;
+package org.eflerrr.client.model;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -9,18 +9,11 @@ import org.springframework.validation.annotation.Validated;
 
 import java.util.Optional;
 
-//@Entity todo: make integration with DB
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Validated
 public class ChatMessage {
-
-    public enum MessageType {
-        TEXT,
-        IMAGE,
-        FILE
-    }
 
     @NotNull
     private byte[] message;

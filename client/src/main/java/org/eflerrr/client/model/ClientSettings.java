@@ -12,5 +12,6 @@ public class ClientSettings {
     private PaddingType paddingType;
     private byte[] IV;
     private Boolean isCreator;
+    private Long sessionId;
 
 }

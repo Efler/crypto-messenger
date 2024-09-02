@@ -3,6 +3,7 @@ package org.eflerrr.client.dao;
 import lombok.Data;
 import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.model.KafkaInfo;
+import org.eflerrr.client.model.entity.ChatEntity;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ public class ChatDao {
     private BigInteger g;
     private BigInteger p;
     private KafkaInfo kafkaInfo;
+    private ChatEntity chatEntity;
 
     public void clear() {
         chatName = null;
@@ -34,6 +36,7 @@ public class ChatDao {
         g = null;
         p = null;
         kafkaInfo = null;
+        chatEntity = null;
     }
 
 }

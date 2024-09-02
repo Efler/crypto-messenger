@@ -12,7 +12,7 @@ services:
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     networks:
-      - backend
+      - backend-kafka
 
   broker-1:
     image: bitnami/kafka:latest
@@ -33,7 +33,7 @@ services:
     depends_on:
       - zookeeper
     networks:
-      - backend
+      - backend-kafka
 
   broker-2:
     image: bitnami/kafka:latest
@@ -54,7 +54,82 @@ services:
     depends_on:
       - zookeeper
     networks:
-      - backend
+      - backend-kafka
+
+
+  # --- database-1 ---
+
+  postgresql-1:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: crypto_messenger
+      POSTGRES_USER: eflerrr
+      POSTGRES_PASSWORD: heyheyhey
+    networks:
+      - backend-1
+
+
+  # --- migrations-1 ---
+
+  liquibase-migrations-1:
+    image: liquibase:alpine
+    depends_on:
+      - postgresql-1
+    command:
+      - --search-path=/liquibase/changelog
+      - --changeLogFile=changelog-master.xml
+      - --driver=org.postgresql.Driver
+      - --url=jdbc:postgresql://postgresql-1:5432/crypto_messenger
+      - --username=eflerrr
+      - --password=heyheyhey
+      - update
+    volumes:
+      - ./migrations:/liquibase/changelog
+    networks:
+      - backend-1
+
+
+  # --- database-2 ---
+
+  postgresql-2:
+    image: postgres:latest
+    ports:
+      - "5444:5432"
+    environment:
+      POSTGRES_DB: crypto_messenger
+      POSTGRES_USER: eflerrr
+      POSTGRES_PASSWORD: hahaha
+    networks:
+      - backend-2
+
+
+  # --- migrations-2 ---
+
+  liquibase-migrations-2:
+    image: liquibase:alpine
+    depends_on:
+      - postgresql-2
+    command:
+      - --search-path=/liquibase/changelog
+      - --changeLogFile=changelog-master.xml
+      - --driver=org.postgresql.Driver
+      - --url=jdbc:postgresql://postgresql-2:5432/crypto_messenger
+      - --username=eflerrr
+      - --password=hahaha
+      - update
+    volumes:
+      - ./migrations:/liquibase/changelog
+    networks:
+      - backend-2
+
+
+networks:
+  backend-kafka: { }
+  backend-1: { }
+  backend-2: { }
+
 
 
 #volumes:
@@ -76,7 +151,3 @@ services:
 #      type: none
 #      o: bind
 #      device: ./docker-volumes/broker-2-data
-
-
-networks:
-  backend: { }

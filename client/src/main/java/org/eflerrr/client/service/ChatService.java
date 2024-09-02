@@ -17,9 +17,16 @@ import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
+import org.eflerrr.client.model.ChatMessage;
 import org.eflerrr.client.model.ClientSettings;
-import org.eflerrr.client.model.entity.ChatMessage;
+import org.eflerrr.client.model.MessageType;
+import org.eflerrr.client.model.entity.ChatEntity;
+import org.eflerrr.client.model.entity.ChatMessageEntity;
+import org.eflerrr.client.model.entity.ClientEntity;
 import org.eflerrr.client.model.event.*;
+import org.eflerrr.client.repository.ChatMessageRepository;
+import org.eflerrr.client.repository.ChatRepository;
+import org.eflerrr.client.repository.ClientRepository;
 import org.eflerrr.encrypt.manager.EncryptorManager;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
@@ -27,6 +34,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +51,10 @@ public class ChatService {
     private final ApplicationConfig config;
     private final ComponentEventBus eventBus = new ComponentEventBus(new Div());
     private final ServerClient serverClient;
+
+    private final ChatRepository chatRepository;
+    private final ClientRepository clientRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     private EncryptorManager clientEncryptorManager;
     private EncryptorManager mateEncryptorManager;
@@ -80,6 +93,33 @@ public class ChatService {
         }
         clientEncryptorManager = null;
         mateEncryptorManager = null;
+    }
+
+    private void setupClientTable(ClientSettings settings) {
+        var newClientEntity = new ClientEntity();
+        newClientEntity.setClientName(settings.getClientName());
+        newClientEntity.setEncryptionMode(settings.getEncryptionMode());
+        newClientEntity.setPaddingType(settings.getPaddingType());
+        newClientEntity.setIV(settings.getIV());
+
+        var generatedId = clientRepository.save(newClientEntity).getSessionId();
+        settings.setSessionId(generatedId);
+    }
+
+    private void setupDatabaseTables() {
+        ChatEntity chatEntity = chatRepository.findByChatNameAndEncryptionAlgorithm(
+                chatDao.getChatName(),
+                chatDao.getEncryptionAlgorithm()
+        ).orElseGet(() -> {
+            var newChatEntity = new ChatEntity();
+            newChatEntity.setChatName(chatDao.getChatName());
+            newChatEntity.setEncryptionAlgorithm(chatDao.getEncryptionAlgorithm());
+            return chatRepository.save(newChatEntity);
+        });
+        chatDao.setChatEntity(chatEntity);
+
+        setupClientTable(chatDao.getSelfSettings());
+        setupClientTable(chatDao.getMateSettings());
     }
 
     public BigInteger getClientPublicKey() {
@@ -162,6 +202,7 @@ public class ChatService {
                 "fetch.max.bytes", String.valueOf(config.kafka().fetchMaxBytes())),
                 new StringDeserializer(), deserializer);
         startConsuming();
+        setupDatabaseTables();
 
         eventBus.fireEvent(new ReadyToChatEvent());
     }
@@ -175,20 +216,48 @@ public class ChatService {
                 new ProducerRecord<>(chatDao.getKafkaInfo().getTopic(), chatMessage));
     }
 
+    private void saveMessageToDatabase(ChatMessage chatMessage) {
+        var messageEntity = new ChatMessageEntity();
+        messageEntity.setMessage(chatMessage.getMessage());
+        messageEntity.setMessageType(chatMessage.getMessageType());
+        messageEntity.setChat(chatDao.getChatEntity());
+        messageEntity.setSentTime(OffsetDateTime.now(ZoneOffset.UTC));
+        messageEntity.setFilename(chatMessage.getFilename().orElse(null));
+        messageEntity.setMimeType(chatMessage.getMimeType().orElse(null));
+
+        var selfEntity = clientRepository.findById(chatDao.getSelfSettings().getSessionId()).orElseThrow();
+        var mateEntity = clientRepository.findById(chatDao.getMateSettings().getSessionId()).orElseThrow();
+        if (chatMessage.getClientId() == clientDao.getClientId()) {
+            messageEntity.setClientFrom(selfEntity);
+            messageEntity.setClientTo(mateEntity);
+        } else {
+            messageEntity.setClientFrom(mateEntity);
+            messageEntity.setClientTo(selfEntity);
+        }
+
+        chatMessageRepository.save(messageEntity);
+    }
+
     public void showMessage(ChatMessage chatMessage) {
+        if (config.database().messages().saveEncrypted()) {
+            saveMessageToDatabase(chatMessage);
+        }
         var encryptedMessage = chatMessage.getMessage();
         var decryptedMessage = chatMessage.getClientId() == clientDao.getClientId()
                 ? clientEncryptorManager.decrypt(encryptedMessage)
                 : mateEncryptorManager.decrypt(encryptedMessage);
         chatMessage.setMessage(decryptedMessage);
         chatMessage.setEncrypted(false);
+        if (!config.database().messages().saveEncrypted()) {
+            saveMessageToDatabase(chatMessage);
+        }
         eventBus.fireEvent(new IncomingMessageEvent(chatMessage));
     }
 
-    public ChatMessage.MessageType resolveMessageType(String fileMIMEType) {
+    public MessageType resolveMessageType(String fileMIMEType) {
         return fileMIMEType.startsWith("image/")
-                ? ChatMessage.MessageType.IMAGE
-                : ChatMessage.MessageType.FILE;
+                ? MessageType.IMAGE
+                : MessageType.FILE;
     }
 
     private void startConsuming() {
