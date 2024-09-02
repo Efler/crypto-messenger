@@ -146,7 +146,7 @@ public class ChatService {
     }
 
     @SneakyThrows
-    public void leaveChat(String chatName, Long clientId) {
+    public void exitChat(String chatName, Long clientId) {
         var chat = chats.get(chatName);
         if (chat == null) {
             throw new IllegalArgumentException(String.format(CHAT_NOT_EXIST_ERROR_MESSAGE, chatName));
@@ -162,11 +162,14 @@ public class ChatService {
             chats.remove(chatName);
             kafkaTopicsDeleter.deleteTopics(Collections.singletonList(chat.getKafkaTopic().name()))
                     .all().get();
-        } else if (clientId.equals(chat.getCreatorId())) {
-            var newCreator = chat.getClients().get(chat.getClients().keySet().iterator().next());
-            chat.setCreatorId(newCreator.getId());
-            newCreator.setPublicKey(null);
-            httpClient.notifyClientLeaving(newCreator.getHost(), newCreator.getPort());
+        } else {
+            if (clientId.equals(chat.getCreatorId())) {
+                var newCreator = chat.getClients().get(chat.getClients().keySet().iterator().next());
+                chat.setCreatorId(newCreator.getId());
+                newCreator.setPublicKey(null);
+            }
+            var creator = chat.getClients().get(chat.getCreatorId());
+            httpClient.notifyClientExit(creator.getHost(), creator.getPort());
         }
     }
 

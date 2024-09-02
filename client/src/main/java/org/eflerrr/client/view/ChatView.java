@@ -28,10 +28,7 @@ import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
 import org.eflerrr.client.model.entity.ChatMessage;
-import org.eflerrr.client.model.event.IncomingMessageEvent;
-import org.eflerrr.client.model.event.MateJoiningEvent;
-import org.eflerrr.client.model.event.ReadyToChatEvent;
-import org.eflerrr.client.model.event.ReceiveMatePublicKeyEvent;
+import org.eflerrr.client.model.event.*;
 import org.eflerrr.client.model.uploadbuffer.UploadBuffer;
 import org.eflerrr.client.service.ChatService;
 import org.eflerrr.client.util.UIUtils;
@@ -60,6 +57,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     private static final String MATE_MODE_TEMPLATE = "Режим: %s";
     private static final String MATE_PADDING_TEMPLATE = "Набивка: %s";
     private static final String MATE_ABSENT_PLACEHOLDER = "ожидаем...";
+    private static final String MESSAGES_SEPARATOR = "– – – – – – –";
 
     private static final String SCROLL_JS_SCRIPT =
             "requestAnimationFrame(() => { this.scrollTop = this.scrollHeight; });";
@@ -122,7 +120,13 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
     }
 
     private void onExitButtonClick(ClickEvent<Button> ignored) {
-        // TODO! LOGIC WHEN EXITING CHAT!
+        try {
+            chatService.exitChat();
+        } catch (IllegalStateException ex) {
+            log.warn(ex.getLocalizedMessage());
+        }
+
+        getUI().ifPresent(ui -> ui.navigate("menu/" + clientDao.getClientName()));
     }
 
     private void onFileUpload(SucceededEvent event) {
@@ -148,7 +152,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             log.warn(ex.getLocalizedMessage());
         }
         if (file != null) {
-            System.out.println(file.delete());
+            log.info(String.valueOf(file.delete()));
         }
     }
 
@@ -198,6 +202,12 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         return button;
     }
 
+    private Div buildMessagesSeparator() {
+        var separator = new Div(MESSAGES_SEPARATOR);
+        separator.setClassName("messages-separator");
+        return separator;
+    }
+
     private void fillMateProps(String mateName, EncryptionMode mateMode, PaddingType matePadding) {
         matePropsHeader.setClassName("props-header");
         matePropsNameLabel.setClassName("props-label-contrast");
@@ -215,6 +225,25 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             var event = (MateJoiningEvent) rawEvent;
             fillMateProps(event.getMateName(), event.getMateMode(), event.getMatePadding());
             loadingLabel.setText("Обмен публичными ключами...");
+
+        });
+    }
+
+    private void onMateExitEvent(MateExitEvent mateExitEvent) {
+        UIUtils.executeWithLockUI(getUI(), mateExitEvent, (ignored) -> {
+
+            matePropsHeader.setClassName("absent-header");
+            matePropsNameLabel.setText(
+                    String.format(MATE_NAME_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
+            matePropsEncryptionModeLabel.setText(
+                    String.format(MATE_MODE_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
+            matePropsPaddingTypeLabel.setText(
+                    String.format(MATE_PADDING_TEMPLATE, MATE_ABSENT_PLACEHOLDER));
+            lockInput();
+            messagesLayout.add(buildMessagesSeparator());
+            messagesLayout.getElement().executeJs(SCROLL_JS_SCRIPT);
+            loadingLabel.setText("Собеседник отключился, ожидаем нового...");
+            loadingLayout.setVisible(true);
 
         });
     }
@@ -443,6 +472,8 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
                 this::onReadyToChatEvent, ReadyToChatEvent.class));
         eventRegistrations.add(chatService.attachListener(
                 this::onIncomingMessageEvent, IncomingMessageEvent.class));
+        eventRegistrations.add(chatService.attachListener(
+                this::onMateExitEvent, MateExitEvent.class));
         if (chatDao.getSelfSettings().getIsCreator()) {
             loadingLabel.setText("Ожидаем собеседника...");
         } else {
@@ -472,6 +503,12 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
 //                div.getStyle().set("margin-left", "auto");
 //                messagesLayout.add(div);
 //            }
+//            messagesLayout.add(buildMessagesSeparator());
+//            Div div = new Div("gay");
+//            div.setClassName("text-message-self");
+//            div.getStyle().set("margin-left", "auto");
+//            messagesLayout.add(div);
+//
 //
 //            loadingLayout.setVisible(false);
 //

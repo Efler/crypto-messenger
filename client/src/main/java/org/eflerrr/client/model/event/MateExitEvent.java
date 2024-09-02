@@ -7,9 +7,9 @@ import lombok.ToString;
 
 @EqualsAndHashCode(callSuper = false)
 @ToString
-public class ReceiveMatePublicKeyEvent extends ComponentEvent<Div> {
+public class MateExitEvent extends ComponentEvent<Div> {
 
-    public ReceiveMatePublicKeyEvent() {
+    public MateExitEvent() {
         super(new Div(), false);
     }
 

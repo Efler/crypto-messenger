@@ -122,6 +122,16 @@
     overflow-y: auto;
 }
 
+.messages-separator {
+    padding: 15px;
+    margin: 25px;
+    color: var(--secondary-color);
+    background-color: transparent;
+    font-weight: bold;
+    font-size: 30px;
+    text-align: center;
+}
+
 .text-message-self {
     max-width: 40%;
     padding: 15px;
@@ -199,13 +209,14 @@
 }
 
 .loading-label {
+    max-width: 85%;
     color: var(--primary-color);
     background-color: var(--secondary-color);
     text-align: center;
     border-radius: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .loading-spinner {

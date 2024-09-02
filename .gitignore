@@ -9,9 +9,9 @@ client/node_modules/
 client/package-lock.json
 client/package.json
 client/tsconfig.json
-client/types.d.ts
-client/vite.config.ts
-client/vite.generated.ts
+client/types.d**
+client/vite.config**
+client/vite.generated**
 
 server/gradle/
 server/.gradle/

@@ -12,6 +12,7 @@ import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.encrypt.types.EncryptionAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -146,6 +147,22 @@ public class ServerClient {
                         .bodyToMono(Boolean.class)
                         .block()
         );
+    }
+
+    public void exitChat(long clientId, String chatName) {
+        log.info("Making a request to the server to exit chat (chat: {})", chatName);
+        webClient.delete()
+                .uri(config.chatEndpoint())
+                .header("Client-Id", String.valueOf(clientId))
+                .header("Chat-Name", chatName)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, r ->
+                        r.bodyToMono(String.class)
+                                .flatMap(errorMessage ->
+                                        Mono.error(new IllegalArgumentException(errorMessage)))
+                )
+                .bodyToMono(Void.class)
+                .block();
     }
 
 }

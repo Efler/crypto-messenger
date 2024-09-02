@@ -46,4 +46,9 @@ public class ClientChatController {
         chatService.receiveMatePublicKey(matePublicKey);
     }
 
+    @DeleteMapping("/client-exit")
+    public void clientExit() {
+        chatService.processMateExit();
+    }
+
 }

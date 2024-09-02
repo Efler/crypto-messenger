@@ -20,9 +20,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.util.List;
 
-import static org.eflerrr.utils.Utils.bytesToBinaryString;
-import static org.eflerrr.utils.Utils.bytesToHexString;
-
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
@@ -151,7 +148,7 @@ public class ServerChatController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Object> leaveChat(
+    public ResponseEntity<Object> exitChat(
             @Min(0)
             @RequestHeader(value = "Client-Id")
             Long clientId,
@@ -160,7 +157,7 @@ public class ServerChatController {
             String chatName
     ) {
         try {
-            chatService.leaveChat(chatName, clientId);
+            chatService.exitChat(chatName, clientId);
             return ResponseEntity
                     .ok()
                     .build();

@@ -23,4 +23,17 @@ public class ChatDao {
     private BigInteger p;
     private KafkaInfo kafkaInfo;
 
+    public void clear() {
+        chatName = null;
+        selfSettings = null;
+        mateSettings = null;
+        encryptionAlgorithm = null;
+        selfPublicKey = null;
+        matePublicKey = null;
+        finalKey = null;
+        g = null;
+        p = null;
+        kafkaInfo = null;
+    }
+
 }

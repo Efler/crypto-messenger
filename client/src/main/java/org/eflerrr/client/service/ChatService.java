@@ -13,15 +13,13 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eflerrr.client.client.ServerClient;
 import org.eflerrr.client.configuration.ApplicationConfig;
 import org.eflerrr.client.dao.ChatDao;
 import org.eflerrr.client.dao.ClientDao;
 import org.eflerrr.client.model.ClientSettings;
 import org.eflerrr.client.model.entity.ChatMessage;
-import org.eflerrr.client.model.event.IncomingMessageEvent;
-import org.eflerrr.client.model.event.MateJoiningEvent;
-import org.eflerrr.client.model.event.ReadyToChatEvent;
-import org.eflerrr.client.model.event.ReceiveMatePublicKeyEvent;
+import org.eflerrr.client.model.event.*;
 import org.eflerrr.encrypt.manager.EncryptorManager;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
@@ -43,6 +41,7 @@ public class ChatService {
     private final ClientDao clientDao;
     private final ApplicationConfig config;
     private final ComponentEventBus eventBus = new ComponentEventBus(new Div());
+    private final ServerClient serverClient;
 
     private EncryptorManager clientEncryptorManager;
     private EncryptorManager mateEncryptorManager;
@@ -73,6 +72,16 @@ public class ChatService {
         return resized;
     }
 
+
+    private void resetEnvironment() {
+        stopConsuming();
+        if (kafkaProducer != null) {
+            kafkaProducer.close();
+        }
+        clientEncryptorManager = null;
+        mateEncryptorManager = null;
+    }
+
     public BigInteger getClientPublicKey() {
         var key = chatDao.getSelfPublicKey();
         if (key == null) {
@@ -89,6 +98,22 @@ public class ChatService {
                 mateSettings.getEncryptionMode(),
                 mateSettings.getPaddingType()
         ));
+    }
+
+    public void processMateExit() {
+        resetEnvironment();
+        chatDao.setMatePublicKey(null);
+        chatDao.setMateSettings(null);
+        chatDao.setFinalKey(null);
+        chatDao.getSelfSettings().setIsCreator(true);
+
+        eventBus.fireEvent(new MateExitEvent());
+    }
+
+    public void exitChat() {
+        resetEnvironment();
+        serverClient.exitChat(clientDao.getClientId(), chatDao.getChatName());
+        chatDao.clear();
     }
 
     public void receiveMatePublicKey(BigInteger matePublicKey) {
@@ -180,8 +205,8 @@ public class ChatService {
                     }
                 }
             } finally {
-                log.info("Stopping consumer...");
                 kafkaConsumer.close();
+                log.info("Stopping consumer...");
             }
         }).start();
     }
