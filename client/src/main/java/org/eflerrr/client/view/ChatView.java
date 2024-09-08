@@ -52,6 +52,7 @@ import java.util.Set;
 @PageTitle("Chat")
 @CssImport("./styles/chat/chat-styles.css")
 @Slf4j
+@SuppressWarnings("FieldCanBeLocal")
 public class ChatView extends HorizontalLayout implements HasUrlParameter<String> {
 
     private static final String MATE_NAME_TEMPLATE = "Имя: %s";
@@ -429,7 +430,7 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
         fileUpload.setClassName("file-upload");
         fileUpload.setUploadButton(fileButton);
         fileUpload.setDropAllowed(false);
-        fileUpload.setMaxFileSize(config.fileUpload().fileMaxSize());
+        fileUpload.setMaxFileSize(config.fileUpload().maxFileSize());
         fileUpload.addSucceededListener(this::onFileUpload);
 
         inputPanelLayout = new HorizontalLayout();
@@ -485,36 +486,6 @@ public class ChatView extends HorizontalLayout implements HasUrlParameter<String
             loadingLabel.setText("Генерация итогового ключа...");
             chatService.setupEnvironment();
         }
-
-
-        //TODO!!!!!!!!!!!!!!!!!!!! STYLING FILE MESSAGE! REMOVE AFTER!
-
-//        UIUtils.executeWithLockUI(getUI(), new IncomingMessageEvent(null), (rawEvent) -> {
-//
-//            var fileMessageButton = buildFileMessageButton("system_design.txt", "application/txt", true);
-//            FileDownloadWrapper fileMessageWrapper = new FileDownloadWrapper(new StreamResource(
-//                    "a.txt", () -> new ByteArrayInputStream("So happy text! :)".getBytes())));
-//            fileMessageWrapper.wrapComponent(fileMessageButton);
-//            fileMessageWrapper.getStyle().set("margin-left", "auto");
-//            messagesLayout.add(fileMessageWrapper);
-//
-//            for (int i = 0; i < 10; i++) {
-//                Div div = new Div("hi" + i);
-//                div.setClassName("text-message-self");
-//                div.getStyle().set("margin-left", "auto");
-//                messagesLayout.add(div);
-//            }
-//            messagesLayout.add(buildMessagesSeparator());
-//            Div div = new Div("gay");
-//            div.setClassName("text-message-self");
-//            div.getStyle().set("margin-left", "auto");
-//            messagesLayout.add(div);
-//
-//
-//            loadingLayout.setVisible(false);
-//
-//        });
-
     }
 
     @Override

@@ -4,7 +4,6 @@ docker-volumes/
 client/gradle/
 client/.gradle/
 client/build/
-client/frontend/generated/
 client/node_modules/
 client/package-lock.json
 client/package.json

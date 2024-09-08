@@ -1,39 +1,42 @@
 app-configs:
-  server-url: http://localhost:8080
-  chat-list:
-    update-interval: 3000ms
-    endpoint: /chat/list
-  chat-endpoint: /chat
+  host: ${APP_HOST:localhost}
+  port: ${APP_PORT:8082}
+  gateway-endpoint: ${GATEWAY_ENDPOINT:/hello}
   server:
-    host: localhost
-    port: ${APP_PORT:8082}
-    gateway-url: /hello
+    protocol: ${SERVER_PROTOCOL:HTTP}
+    host: ${SERVER_HOST:localhost}
+    port: ${SERVER_PORT:8080}
+    chat:
+      endpoint: ${SERVER_CHAT_ENDPOINT:/chat}
+    chat-list:
+      endpoint: ${SERVER_CHAT_LIST_ENDPOINT:/chat/list}
+      update-interval: ${SERVER_CHAT_LIST_UPDATE_INTERVAL:3000ms}
   file-upload:
-    in-memory: true
-    file-max-size: 15728640  # 15 Mb
+    in-memory: ${FILE_UPLOAD_IN_MEMORY:true}
+    max-file-size: ${FILE_UPLOAD_MAX_FILE_SIZE:15728640}  # 15 Mb
   encryption:
-    private-key-bit-length: 1024
+    private-key-bit-length: ${ENCRYPTION_PRIVATE_KEY_BIT_LENGTH:1024}
   kafka:
-    max-request-size: 15728641  # 15 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
-    fetch-max-bytes: 15728641  # 15 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
+    max-request-size: ${KAFKA_MAX_REQUEST_SIZE:15728641}  # 15 Mb (file-max-size)  +  1 mb for message metadata  [producer prop]
+    fetch-max-bytes: ${KAFKA_FETCH_MAX_BYTES:15728641}  # 15 Mb (file-max-size)  +  1 mb for message metadata  [consumer prop]
   database:
     messages:
-      save-encrypted: true
+      save-encrypted: ${DB_MESSAGES_SAVE_ENCRYPTED:true}
 
 spring:
   application:
-    name: client
+    name: ${APP_NAME:client}
   liquibase:
     enabled: false
   servlet:
     multipart:
-      max-file-size: ${app-configs.file-upload.file-max-size}
+      max-file-size: ${app-configs.file-upload.max-file-size}
   spring:
     json:
       trusted:
         packages: "*"
   datasource:
-    url: jdbc:postgresql://localhost:${DB_PORT:5432}/crypto_messenger
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_DATABASE:crypto_messenger}
     username: ${DB_USERNAME:eflerrr}
     password: ${DB_PASSWORD:heyheyhey}
     driver-class-name: org.postgresql.Driver
@@ -52,7 +55,7 @@ springdoc:
     path: /endpoints
 
 server:
-  port: ${app-configs.server.port}
+  port: ${app-configs.port}
 
 vaadin:
   frontend:

@@ -1,22 +1,29 @@
 app-configs:
+  host: ${APP_HOST:localhost}
+  port: ${APP_PORT:8080}
+  clients:
+    protocol: ${CLIENTS_PROTOCOL:HTTP}
+    root-endpoint: ${CLIENTS_ROOT_ENDPOINT:/client-chat}
+    public-key-endpoint: ${CLIENTS_PUBLIC_KEY_ENDPOINT:/public-key}
+    notify-exit-endpoint: ${CLIENTS_NOTIFY_EXIT_ENDPOINT:/client-exit}
   kafka:
-    bootstrap-servers: localhost:9093
-    topics-replication-factor: 2
-    topics-postfix: -chat
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
+    topics-replication-factor: ${KAFKA_TOPICS_REPLICATION_FACTOR:2}
+    topics-postfix: ${KAFKA_TOPICS_POSTFIX:-chat}
   diffie-hellman:
-    bit-length: 100
+    bit-length: ${DIFFIE_HELLMAN_BIT_LENGTH:100}
 
 spring:
   application:
-    name: server
+    name: ${APP_NAME:server}
   kafka:
     bootstrap-servers: ${app-configs.kafka.bootstrap-servers}
     admin:
-      client-id: server-admin
+      client-id: ${KAFKA_ADMIN_CLIENT_ID:server-admin}
 
 springdoc:
   swagger-ui:
     path: /endpoints
 
 server:
-  port: 8080
+  port: ${app-configs.port}

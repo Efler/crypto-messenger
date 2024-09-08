@@ -196,9 +196,4 @@ public class ServerChatController {
                 .ok(chatService.isChatRegistered(chatName));
     }
 
-    @PostMapping("/checker")        // TODO: for debug only, remove in production
-    public void checker() {     // TODO: for debug only, remove in production
-        chatService.checker();
-    }
-
 }

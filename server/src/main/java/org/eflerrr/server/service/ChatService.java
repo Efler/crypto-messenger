@@ -190,20 +190,4 @@ public class ChatService {
         return isRegistered;
     }
 
-
-    public void checker() {     // TODO: for debug only, remove in production
-        if (chats.isEmpty()) {
-            log.info("No chats");
-            return;
-        }
-        for (var chat : chats.values()) {
-            log.info("Chat:");
-            log.info(chat.toString());
-            log.info("Clients:");
-            for (var client : chat.getClients().values()) {
-                log.info(client.toString());
-            }
-        }
-    }
-
 }

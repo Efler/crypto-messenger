@@ -26,7 +26,7 @@ public class ChatListUpdateScheduler {
     private boolean isRunning = false;
     private List<ChatInfo> previousList = null;
 
-    @Scheduled(fixedRateString = "#{@chatList.updateInterval}")
+    @Scheduled(fixedRateString = "#{@server.chatList.updateInterval}")
     public void updateChatList() {
         if (isRunning) {
             log.info("Updating chat list in scheduler");

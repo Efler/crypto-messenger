@@ -20,20 +20,22 @@ import reactor.core.publisher.Mono;
 import java.math.BigInteger;
 import java.util.List;
 
-import static org.eflerrr.utils.Utils.bytesToBinaryString;
-import static org.eflerrr.utils.Utils.bytesToHexString;
-
 @Component
 @Slf4j
 public class ServerClient {
 
+    private static final String SERVER_URL_TEMPLATE = "%s://%s:%d";
     private final ApplicationConfig config;
     private final WebClient webClient;
 
     @Autowired
     public ServerClient(ApplicationConfig config) {
         this.webClient = WebClient.builder()
-                .baseUrl(config.serverUrl())
+                .baseUrl(String.format(
+                        SERVER_URL_TEMPLATE,
+                        config.server().protocol(),
+                        config.server().host(),
+                        config.server().port()))
                 .build();
         this.config = config;
     }
@@ -41,7 +43,7 @@ public class ServerClient {
     public List<ChatInfo> requestChatList() {
         log.info("Making a request to the server to get the chat list");
         var response = webClient.get()
-                .uri(config.chatList().endpoint())
+                .uri(config.server().chatList().endpoint())
                 .retrieve()
                 .toEntityList(ChatInfo.class)
                 .block();
@@ -57,10 +59,10 @@ public class ServerClient {
             ClientSettings clientSettings
     ) {
         return webClient.post()
-                .uri(config.chatEndpoint())
+                .uri(config.server().chat().endpoint())
                 .header("Client-Id", String.valueOf(clientId))
-                .header("Client-Host", config.server().host())
-                .header("Client-Port", String.valueOf(config.server().port()))
+                .header("Client-Host", config.host())
+                .header("Client-Port", String.valueOf(config.port()))
                 .bodyValue(CreateChatRequest.builder()
                         .chatName(chatName)
                         .encryptionAlgorithm(algorithm)
@@ -83,10 +85,10 @@ public class ServerClient {
     ) {
         log.info("Making a request to the server to join a chat: {}", chatName);
         return webClient.patch()
-                .uri(config.chatEndpoint())
+                .uri(config.server().chat().endpoint())
                 .header("Client-Id", String.valueOf(clientId))
-                .header("Client-Host", config.server().host())
-                .header("Client-Port", String.valueOf(config.server().port()))
+                .header("Client-Host", config.host())
+                .header("Client-Port", String.valueOf(config.port()))
                 .bodyValue(JoinChatRequest.builder()
                         .chatName(chatName)
                         .clientSettings(clientSettings)
@@ -117,7 +119,7 @@ public class ServerClient {
     public ExchangePublicKeyResponse exchangePublicKey(long clientId, String chatName, BigInteger publicKey) {
         log.info("Making a request to the server to exchange public key (chat: {})", chatName);
         return webClient.put()
-                .uri(config.chatEndpoint())
+                .uri(config.server().chat().endpoint())
                 .header("Client-Id", String.valueOf(clientId))
                 .header("Chat-Name", chatName)
                 .bodyValue(publicKey)
@@ -142,7 +144,7 @@ public class ServerClient {
         log.info("Making a request to the server to check if chat is registered (chat: {})", chatName);
         return Boolean.TRUE.equals(
                 webClient.get()
-                        .uri(config.chatEndpoint() + "/is-registered/{chat-name}", chatName)
+                        .uri(config.server().chat().endpoint() + "/is-registered/{chat-name}", chatName)
                         .retrieve()
                         .bodyToMono(Boolean.class)
                         .block()
@@ -152,7 +154,7 @@ public class ServerClient {
     public void exitChat(long clientId, String chatName) {
         log.info("Making a request to the server to exit chat (chat: {})", chatName);
         webClient.delete()
-                .uri(config.chatEndpoint())
+                .uri(config.server().chat().endpoint())
                 .header("Client-Id", String.valueOf(clientId))
                 .header("Chat-Name", chatName)
                 .retrieve()

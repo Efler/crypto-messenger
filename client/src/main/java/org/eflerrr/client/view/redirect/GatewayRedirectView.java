@@ -16,7 +16,7 @@ public class GatewayRedirectView extends Div implements BeforeEnterObserver {
 
     @Autowired
     public GatewayRedirectView(ApplicationConfig config) {
-        gatewayUrl = config.server().gatewayUrl();
+        gatewayUrl = config.gatewayEndpoint();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.eflerrr.server.client;
 
 import lombok.RequiredArgsConstructor;
+import org.eflerrr.server.configuration.ApplicationConfig;
 import org.eflerrr.server.model.ClientSettings;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -13,14 +14,31 @@ import java.math.BigInteger;
 @RequiredArgsConstructor
 public class HttpClient {
 
-    private static final String PUBLIC_KEY_URL = "http://%s:%d/client-chat/public-key"; // TODO: replace to configs, no hardcode!
-    private static final String NOTIFY_CLIENT_EXIT_URL = "http://%s:%d/client-chat/client-exit"; // TODO: replace to configs, no hardcode!
+    private static final String CLIENT_URL_TEMPLATE = "%s://%s:%d%s%s";
     private final WebClient webClient = WebClient.create();
+    private final ApplicationConfig config;
+
+    private enum ClientRequestType {
+        PUBLIC_KEY,
+        NOTIFY_EXIT
+    }
+
+    private String buildUri(String host, int port, ClientRequestType type) {
+        return String.format(CLIENT_URL_TEMPLATE,
+                config.clients().protocol(),
+                host,
+                port,
+                config.clients().rootEndpoint(),
+                switch (type) {
+                    case PUBLIC_KEY -> config.clients().publicKeyEndpoint();
+                    case NOTIFY_EXIT -> config.clients().notifyExitEndpoint();
+                });
+    }
 
     public BigInteger getPublicKey(
             String host, int port, ClientSettings mateSettings) {
         return webClient.put()
-                .uri(String.format(PUBLIC_KEY_URL, host, port))
+                .uri(buildUri(host, port, ClientRequestType.PUBLIC_KEY))
                 .bodyValue(mateSettings)
                 .retrieve()
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
@@ -31,7 +49,7 @@ public class HttpClient {
 
     public void sendPublicKey(String host, int port, BigInteger matePublicKey) {
         webClient.post()
-                .uri(String.format(PUBLIC_KEY_URL, host, port))
+                .uri(buildUri(host, port, ClientRequestType.PUBLIC_KEY))
                 .bodyValue(matePublicKey)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
@@ -42,7 +60,7 @@ public class HttpClient {
 
     public void notifyClientExit(String host, int port) {
         webClient.delete()
-                .uri(String.format(NOTIFY_CLIENT_EXIT_URL, host, port))
+                .uri(buildUri(host, port, ClientRequestType.NOTIFY_EXIT))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         Mono.error(new IllegalStateException("Client error occurred: " + response.statusCode()))
