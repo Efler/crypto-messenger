@@ -5,6 +5,7 @@ client/gradle/
 client/.gradle/
 client/build/
 client/node_modules/
+client/frontend/generated/
 client/package-lock.json
 client/package.json
 client/tsconfig.json
